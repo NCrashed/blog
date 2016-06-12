@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <title>Haskell without remorse</title>
+    <link href="http://ncrashed.github.io/blog/atom.xml" rel="self" />
+    <link href="http://ncrashed.github.io/blog" />
+    <id>http://ncrashed.github.io/blog/atom.xml</id>
+    <author>
+        <name>Anton Gushcha</name>
+        <email>ncrashed@gmail.com</email>
+    </author>
+    <updated>2015-12-07T00:00:00Z</updated>
+    <entry>
+    <title>Tu Quoque</title>
+    <link href="http://ncrashed.github.io/blog/posts/2015-12-07-tu-quoque.html" />
+    <id>http://ncrashed.github.io/blog/posts/2015-12-07-tu-quoque.html</id>
+    <published>2015-12-07T00:00:00Z</published>
+    <updated>2015-12-07T00:00:00Z</updated>
+    <summary type="html"><![CDATA[Vestibulum leo turpis, dignissim quis ultrices sit amet, iaculis ac ligula. Pellentesque tristique, velit eget scelerisque scelerisque, est dolor ultrices arcu, quis ullamcorper justo arcu luctus mauris. Integer congue molestie nisi id posuere.]]></summary>
+</entry>
+<entry>
+    <title>Carpe Diem</title>
+    <link href="http://ncrashed.github.io/blog/posts/2015-11-28-carpe-diem.html" />
+    <id>http://ncrashed.github.io/blog/posts/2015-11-28-carpe-diem.html</id>
+    <published>2015-11-28T00:00:00Z</published>
+    <updated>2015-11-28T00:00:00Z</updated>
+    <summary type="html"><![CDATA[Fusce tortor quam, egestas in posuere quis, porttitor vel turpis. Donec vulputate porttitor augue at rhoncus. Proin iaculis consectetur sagittis. Curabitur venenatis turpis sit amet purus tristique nec posuere risus laoreet.]]></summary>
+</entry>
+<entry>
+    <title>Rosa Rosa Rosam</title>
+    <link href="http://ncrashed.github.io/blog/posts/2015-10-07-rosa-rosa-rosam.html" />
+    <id>http://ncrashed.github.io/blog/posts/2015-10-07-rosa-rosa-rosam.html</id>
+    <published>2015-10-07T00:00:00Z</published>
+    <updated>2015-10-07T00:00:00Z</updated>
+    <summary type="html"><![CDATA[Suspendisse pharetra ullamcorper sem et auctor. Suspendisse vitae tellus eu turpis dignissim gravida ut ut tortor. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Morbi aliquam sapien quis nisl sodales non aliquet nisl iaculis. Curabitur fermentum orci vel sapien pellentesque id condimentum metus vehicula. Curabitur turpis purus, scelerisque at interdum quis, placerat sit amet tortor. Aliquam erat volutpat.]]></summary>
+</entry>
+<entry>
+    <title>S.P.Q.R.</title>
+    <link href="http://ncrashed.github.io/blog/posts/2015-08-12-spqr.html" />
+    <id>http://ncrashed.github.io/blog/posts/2015-08-12-spqr.html</id>
+    <published>2015-08-12T00:00:00Z</published>
+    <updated>2015-08-12T00:00:00Z</updated>
+    <summary type="html"><![CDATA[Mauris in lorem nisl. Maecenas tempus facilisis ante, eget viverra nisl tincidunt et.]]></summary>
+</entry>
+
+</feed>
