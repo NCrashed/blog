@@ -1,4 +1,12 @@
 {
+  "build_systems":
+  [
+    {
+      "name": "Stack",
+      "shell_cmd": "stack install && stack exec blog rebuild",
+      "working_dir": "${project_path}"
+    },
+  ],
 	"folders":
 	[
 		{
