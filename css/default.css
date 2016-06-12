@@ -1,10 +1,10 @@
 @font-face { 
     font-family: Manifesto; 
-    src: url('/fonts/manifesto.ttf'); 
+    src: url('../fonts/manifesto.ttf'); 
 } 
 
 html {
-    background-image: url("/images/grid.png");
+    background-image: url("../images/grid.png");
 }
 
 body {
