@@ -1,6 +1,6 @@
 ---
 title: S.P.Q.R.
-image: /images/haskell-logo.png
+image: images/haskell-logo.png
 description: Mauris in lorem nisl. Maecenas tempus facilisis ante, eget viverra nisl tincidunt et.
 ---
 

@@ -7,8 +7,6 @@ git checkout master
 # Build new files
 stack exec blog clean
 stack exec blog build
-cp -r images _site/images
-cp -r fonts _site/fonts
 
 # Get previous files
 git fetch -all
