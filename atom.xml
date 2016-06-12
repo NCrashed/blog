@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <title>Haskell without remorse</title>
+    <link href="http://ncrashed.github.io/blog/atom.xml" rel="self" />
+    <link href="http://ncrashed.github.io/blog" />
+    <id>http://ncrashed.github.io/blog/atom.xml</id>
+    <author>
+        <name>Anton Gushcha</name>
+        <email>ncrashed@gmail.com</email>
+    </author>
+    <updated>Unknown</updated>
+    
+</feed>
