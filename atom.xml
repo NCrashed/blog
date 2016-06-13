@@ -8,6 +8,14 @@
         <name>Anton Gushcha</name>
         <email>ncrashed@gmail.com</email>
     </author>
-    <updated>Unknown</updated>
-    
+    <updated>2016-06-12T00:00:00Z</updated>
+    <entry>
+    <title>Live profiling and performance monitoring server</title>
+    <link href="http://ncrashed.github.io/blog/posts/2016-06-12-hsoc-acceptance.html" />
+    <id>http://ncrashed.github.io/blog/posts/2016-06-12-hsoc-acceptance.html</id>
+    <published>2016-06-12T00:00:00Z</published>
+    <updated>2016-06-12T00:00:00Z</updated>
+    <summary type="html"><![CDATA[HSOC has suddenly received additional funding and my project of improving GHC event logging experience now is among the chosen ones. The post contains the full proposal description and info about mentors.]]></summary>
+</entry>
+
 </feed>

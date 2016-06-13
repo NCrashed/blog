@@ -7,7 +7,15 @@
         <description><![CDATA[Blog about Haskell development]]></description>
         <atom:link href="http://ncrashed.github.io/blog/feed.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Unknown</lastBuildDate>
-        
+        <lastBuildDate>Sun, 12 Jun 2016 00:00:00 UT</lastBuildDate>
+        <item>
+    <title>Live profiling and performance monitoring server</title>
+    <link>http://ncrashed.github.io/blog/posts/2016-06-12-hsoc-acceptance.html</link>
+    <description><![CDATA[HSOC has suddenly received additional funding and my project of improving GHC event logging experience now is among the chosen ones. The post contains the full proposal description and info about mentors.]]></description>
+    <pubDate>Sun, 12 Jun 2016 00:00:00 UT</pubDate>
+    <guid>http://ncrashed.github.io/blog/posts/2016-06-12-hsoc-acceptance.html</guid>
+    <dc:creator>Anton Gushcha</dc:creator>
+</item>
+
     </channel>
 </rss>

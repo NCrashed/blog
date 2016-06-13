@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>Haskelling without remorse - Live profiling and performance monitoring server</title>
+        <link href="https://fonts.googleapis.com/css?family=Roboto+Slab&subset=latin,cyrillic-ext" rel="stylesheet" type="text/css">
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="alternate" type="application/rss+xml" title="Haskell without remorse" href="./feed.xml">
+        <link rel="alternate" type="application/atom+xml" title="Haskell without remorse" href="./atom.xml">
+    </head>
+    <body>
+        <div id="container">
+            <div id="header">
+                <div id="logo">
+                    <a href="../">Haskelling without remorse</a>
+                </div>
+                <div id="navigation">
+                    <a href="../">Home</a>
+                    <a href="../about.html">About</a>
+                    <a href="../contact.html">Contact</a>
+                    <a href="../feed.xml">RSS</a>
+                </div>
+            </div>
+
+            <div id="content">
+                <h1>Live profiling and performance monitoring server</h1>
+
+                <div class="info">
+    Posted on June 12, 2016
+    
+</div>
+
+<div class="post-body">
+<p>I was quite disappointed when my project wasn’t announced as accepted for <a href="https://www.reddit.com/r/haskell/comments/4kp6zg/summer_of_haskell_2016_accepted_projects/">Haskell Summer of Code 2016</a>. But HSOC got additional funding and I participate now, yay! The following part of the post contains full text of my proposal revised. I’ve lost some time, but I am sure, that the incoming summer will be productive.</p>
+<h2 id="what-is-the-goal-of-your-project">What is the goal of your project?</h2>
+<p>The goal of this project is to improve runtime analysis of the haskell programs by combining existing eventlog framework, heap profiling tools and new features of the GHC runtime. The scope of this work includes:</p>
+<ul>
+<li><p>extending runtime system to support writing eventlog and profile information into unix sockets or TCP descriptors;</p></li>
+<li><p>the evaluation and extension of the tools necessary to make use of this.</p></li>
+</ul>
+<h2 id="can-you-give-some-more-detailed-design-of-what-precisely-you-intend-to-achieve">Can you give some more detailed design of what precisely you intend to achieve?</h2>
+<p>The intended work could be split in three parts: RTS improvements, development of a monitoring server, extending of supporting libraries.</p>
+<ol style="list-style-type: decimal">
+<li>RTS improvements should allow to stream profiling and event log data to the external sources. Primary targets are such sinks are TCP or UNIX domain sockets, but implementation should be general enough to allow user to add his own. This could be achieved by creating callback system that will allow user to add hooks on different events, like buffer is full, or request certain events like sync events to happen. This design allow to keep RTS as simple and as generic as possible. All complex logic will be implemented on library level. Other improvements may include runtime tuning of the logging options, such as:</li>
+</ol>
+<ol style="list-style-type: lower-alpha">
+<li><p>Switching eventlog and profiling on and of during in runtime;</p></li>
+<li><p>Tweaking parameters like per-cap buffer size;</p></li>
+<li><p>Enabling and disabling concrete subsystems (GC, user events, etc.)</p></li>
+</ol>
+<p>Implementation of the TCP and UNIX domain socket proxy as an example of the library code. This application should be production quality and could be used as a reasonable default for users who want to have event tracing.</p>
+<ol start="2" style="list-style-type: decimal">
+<li><p>Supporting libraries that are needed to implement monitoring server includes utilities and tools for end-user integration. This will likely require additions and reworking existing tools, such as hp2any, threadscope, or ghc-events. Also library that uses new RTS features to implement transferring eventlog data via TCP and UNIX domain sockets. Finer grained profiling tools can be built on top of the enumerated tasks, if they fit within the scope of the project.</p></li>
+<li><p>Monitoring server is a end-user application that can be used to monitor and present all information provided by the new runtime monitoring framework inside RTS. This server will be implemented in haskell and will be able to connect to running program either by socket or file. (This monitoring can be run in compatibility mode and incrementally read information from eventlog and profile files, so it will be possible to use it even for code that was compiled by older GHC that doe not have new framework). Monitor server displays reports, logs and diagrams based on log data (that are activity of each HEC, threads, user events, heap profile, and calculate some stats, example is duration between 2 user events (see ghc-events-analyse)).</p></li>
+</ol>
+<h2 id="do-you-have-a-mentor-in-mind-if-so-whom-have-you-already-spoken-with-them-about-this">Do you have a mentor in mind? If so, whom? Have you already spoken with them about this?</h2>
+<p>Official mentor: Austin Seipp aka <a href="https://github.com/thoughtpolice">thoughtpolice</a></p>
+<p>Comentor: Alexander Vershilov aka <a href="http://qnikst.github.io/">qnikst</a></p>
+<h2 id="what-deliverables-do-you-think-are-reasonable-targets-can-you-outline-an-approximate-schedule-of-milestones">What deliverables do you think are reasonable targets? Can you outline an approximate schedule of milestones?</h2>
+<p><em>Features that are marked by [optional] could be sacrificed if some severe issues appear. It doesn’t mean that I am not going to implement them to the end of hsoc, but they are not critical for practical application of the work.</em></p>
+<ol style="list-style-type: decimal">
+<li>RTS features, optional features actually taken from unfinished work in 2014 of Karolis Velicka:</li>
+</ol>
+<ul>
+<li><p>Defining new hook type that is called when eventlog buffer is full. This is the minimum viable product, and has a good power to weight ratio for the basic cases.</p></li>
+<li><p><em>[optional]</em> Allow turning event logging on/off as a whole at runtime.</p></li>
+<li><p><em>[optional]</em> Allow turning on/off individual classes of events at runtime.</p></li>
+<li><p><em>[optional]</em> Allow emitting “synchronisation” events, mainly to be used when switching eventlog on/off or redirecting the output to a new sink, or just from time to time to let monitoring apps get a full tracking state.</p></li>
+<li><p><em>[optional]</em> Allow active flushing of the eventlog buffers. Normally the eventlog data is only flushed when a per-cap buffer is full. This can be a long time if one cap is very active while another is not.</p></li>
+</ul>
+<ol start="2" style="list-style-type: decimal">
+<li>Haskell support libraries for:</li>
+</ol>
+<ul>
+<li><p>Incremental parser of eventlog and heap profile. Actually the parser is already done by Karolis Velicka and hp2any author Patai Gergely. So task is to reuse existing pieces of code. Important note is that parser should accept incomplete eventlog files, for instance, from crashed programs.</p></li>
+<li><p>Library that uses stated RTS hook features to enable transferring eventlog datum via TCP and UNIX domain sockets.</p></li>
+<li><p><em>[optional]</em> Utilities for wrapping execution of expressions with user defined markers. That tagged expressions are displayed at the monitoring server with time bounds when they were evaluated.</p></li>
+</ul>
+<ol start="3" style="list-style-type: decimal">
+<li>Haskell monitoring server, ThreadScope like web-application:</li>
+</ol>
+<ul>
+<li><p>Display activity on each Haskell Execution Context;</p></li>
+<li><p>An activity profile indicates the rough utilization of the HECs;</p></li>
+<li><p>View the rate at which “par sparks” are created and evaluated during the program, and the size of the spark queue on each HEC.</p></li>
+<li><p>Display heap usage diagrams from heap profiling info loaded from file</p></li>
+<li><p>Connect to RTS TCP/UNIX sockets or load data from files.</p></li>
+<li><p><em>[optional]</em> Control RTS from web-application.</p></li>
+<li><p><em>[optional]</em> Display activity on each Haskell thread.</p></li>
+<li><p><em>[optional]</em> Management of saved profiles. Comparing a profile with previous runs.</p></li>
+</ul>
+<ol start="4" style="list-style-type: decimal">
+<li>Investigation activity:</li>
+</ol>
+<ul>
+<li><p>Investigate interference between eventlog and heap profile.</p></li>
+<li><p>Explore profitability of socket-based RTS services. Does FIFO hack performs better? Does live streaming skew picture of performance too much?</p></li>
+<li><p>Investigate new statistics that can be extracted from event log and future direction of development of RTS profiling.</p></li>
+</ul>
+<p>Milestones:</p>
+<ol style="list-style-type: decimal">
+<li><p>Investigation of previous methods. I am going to reimplement an age-old hack [item 9 in references] using a FIFO for the eventlog, and use it as prototype of live streaming. This would also be a nice fallback mode for older users, until patches are available in GHC.</p></li>
+<li><p>Monitoring server development. I want to implement haskell web-server (yesod or servant based) for streaming profile data into browser client implemented with modern web technologies. The main goal is to provide a cross-platform profiling tool. At the point I could reuse http://heap.ezyang.com/ widget for heap profiling and improve it. There’s luckily a lot of code that can probably be reused in many places (including ThreadScope itself).</p></li>
+<li><p>Implementation of RTS features. I am going to implement the necessary streaming features in the runtime, and see how it compares to hack-based approach and scales for real usage. Implementation of further features (such as dynamic on/off switches) will require more work, but the minimum necessary features are certainly achievable. As the RTS is complex and has many concerns, this design process will need to begin early.</p></li>
+<li><p>Monitoring server improvement. After these are in place, modifying tools like the monitor to use sockets and future improvements is much more viable. Also at the stage I am going to make some usability improvements (saved profiles for instance).</p></li>
+<li><p>Investigation activity. Within the milestone I am going to find out answers to questions stated in investigation activity section and questions that will raise during previous milestones.</p></li>
+<li><p>Enclosing milestone. Final stage is deploying web-server, making wiki-pages, cleaning documentation, final community negotiations. Although documentation developing should be shared over the course of the process, I distinguish the stage as the documentation would become major part of my activity at the end of development, as this will be necessary for the wider community to take advantage.</p></li>
+</ol>
+<h2 id="in-what-ways-will-this-project-benefit-the-wider-haskell-community">In what ways will this project benefit the wider Haskell community?</h2>
+<ul>
+<li><p>Currently there is no good story for runtime application profiling. Eventlog and heap metrics can be used only if application successfully exits, this makes it unusable in case if long running application should be inspected in runtime. The primary example of the library that can be used for runtime monitoring is EKG, it provides a solid ground for monitoring and is general enough to over different backends and new metrics. But it’s primary target is user defined metrics. This this framework will provide a working approach for lifetime monitoring of the RTS events.</p></li>
+<li><p>Implemented RTS features will allow users to implement their own backends for live monitoring as design choices for proposed monitoring server cannot satisfy all range of users. The following eventlog backends for live streaming could be implemented in future work: UDP, ZeroMQ, DSS, circular buffer file.</p></li>
+<li><p>Proposed monitoring server is portable and ‘plug and work’ solution for majority of Haskell community. The server provides all in one tool for analysis of profile information.</p></li>
+<li><p>One can deploy community public server that simplifies profiling to compilation of program with certain flags and connecting it to the public server. Corporate local servers are possible too.</p></li>
+</ul>
+<h2 id="related-work-and-references">Related work and references</h2>
+<ol style="list-style-type: decimal">
+<li><p><a href="https://ghc.haskell.org/trac/summer-of-code/ticket/1658">Original Trac ticket</a>.</p></li>
+<li><p><a href="https://wiki.haskell.org/ThreadScope">ThreadScope</a> - is a tool for performance profiling of parallel Haskell programs.</p></li>
+<li><p><a href="http://www.well-typed.com/blog/86/">ghc-events-analyse</a> - awesome tool with per thread analysis.</p></li>
+<li><p><a href="https://hackage.haskell.org/package/hp2html">hp2html</a> - a tool for converting GHC heap-profiles to HTML.</p></li>
+<li><p><a href="https://wiki.haskell.org/Hp2any">hp2any</a> - a set of tools to deal with heap profiles.</p></li>
+<li><p><a href="https://ghc.haskell.org/trac/ghc/wiki/EventLog">GHC event log</a> general info.</p></li>
+<li><p>Karolis Velicka original <a href="https://ghc.haskell.org/trac/ghc/wiki/EventLog/LiveMonitoring">wiki page</a>.</p></li>
+<li><p><a href="https://hackage.haskell.org/package/ghc-events">ghc-events</a> - library for parsing eventlog.</p></li>
+<li><p><a href="http://man7.org/linux/man-pages/man7/fifo.7.html">how to trap</a> current implementation of eventlog (FIFO hack) -</p></li>
+<li><p><a href="http://hackage.haskell.org/package/ekg-0.4.0.9">ekg</a> - related project for remote monitoring.</p></li>
+</ol>
+</div>
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+    
+    /*
+    var disqus_config = function () {
+        this.page.url = '/posts/2016-06-12-hsoc-acceptance.html';  // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+    */
+
+    (function() {  // DON'T EDIT BELOW THIS LINE
+        var d = document, s = d.createElement('script');
+        
+        s.src = '//haskellwithoutremorse.disqus.com/embed.js';
+        
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+            </div>
+            <div id="footer">
+                Blog powered by
+                <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+            </div>
+        </div>
+    <script id="dsq-count-scr" src="//haskellwithoutremorse.disqus.com/count.js" async></script>
+    </body>
+</html>
