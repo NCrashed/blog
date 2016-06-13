@@ -3,6 +3,11 @@
     src: url('../fonts/manifesto.ttf'); 
 } 
 
+@font-face { 
+    font-family: Droid; 
+    src: url('../fonts/DroidSerif-Regular.ttf'); 
+} 
+
 html {
     background-image: url("../images/grid.png");
 }
@@ -17,8 +22,7 @@ body {
     position: relative;
 
     font-size: 125%;
-    font-family: 'Roboto Slab', serif;
-    font-weight: 200;
+    font-family: 'Droid', serif;
 }
 
 div#header {
@@ -26,12 +30,13 @@ div#header {
     margin-bottom: 30px;
     padding: 12px 12px 12px 12px;
     font-family: Manifesto;
+    font-size: 25px;
 }
 
 div#logo a {
     color: black;
     float: left;
-    font-size: 18px;
+    font-size: 25px;
     font-weight: bold;
     text-decoration: none;
 }
@@ -67,21 +72,27 @@ h1 {
 
 h2 {
     font-size: 30px;
-    font-family: Manifesto;
+    font-family: 'Droid', serif;
+    font-weight: 700;
     text-align: left;
 }
 
 div.info {
     color: #555;
-    font-size: 14px;
+    font-size: 18px;
     font-style: italic;
 }
 
 .postinfo {
     color: rgb(150, 150, 150);
     font-size: 80%;
-    font-family: 'Roboto Slab', serif;
+    font-family: 'Droid', serif;
     font-weight: 200;
+}
+
+.postinfo-url {
+    margin-top: -15px;
+    font-size: 120%;
 }
 
 .post-preview {
@@ -95,4 +106,10 @@ div.info {
 
 .post-preview-img {
     margin: 12px;
+}
+
+.post-body {    
+    font-weight: 500;
+    font-size: 125%;
+    text-align: justify;
 }
