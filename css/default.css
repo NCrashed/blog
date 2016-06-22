@@ -113,3 +113,10 @@ div.info {
     font-size: 125%;
     text-align: justify;
 }
+
+img[src*='#right']{ float: right; }
+img[src*='#left']{ float: left; }
+img[src*='#center']{     
+    margin: 0 auto;
+    display: block;
+}
