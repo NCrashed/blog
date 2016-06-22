@@ -4,12 +4,12 @@ image: images/rts-overview.png
 description: During the last week I was implementing base RTS features to support live event logging in GHC. I tried several design choices for eventlog piping to Haskell side, some of them being tempting leads to non-obvious problems with multithreaded environment or causes deadlocks. As a result, RTS now can redirect events into user specified file descriptor and pipe them via extendable memory buffer.
 ---
 
-The heavy work under my [HSOC project](http://ncrashed.github.io/blog/posts/2016-06-12-hsoc-acceptance.htm) has begun. The first and the most important point in my plan is implementation
+The heavy work under my [HSOC project](http://ncrashed.github.io/blog/posts/2016-06-12-hsoc-acceptance.html) has begun. The first and the most important point in my plan is implementation
 of RTS API for following actions with the eventlog subsystem:
 
 * Redirecting event stream to user specified file descriptor. 
 
-* Piping all events via memory into the Haskell side.
+* Piping all events via memory into the Haskell side. 
 
 * Dynamic resizing of internal buffers.
 
