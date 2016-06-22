@@ -6,6 +6,8 @@
         <title>Haskelling without remorse - Home</title>
         <link href="https://fonts.googleapis.com/css?family=Roboto+Slab&subset=latin,cyrillic-ext" rel="stylesheet" type="text/css">
         <link rel="stylesheet" type="text/css" href="./css/default.css" />
+        <link rel="stylesheet" type="text/css" href="./css/syntax.css" />
+        <link rel="stylesheet" type="text/css" href="./css/spoiler.css" />
         <link rel="alternate" type="application/rss+xml" title="Haskell without remorse" href="./feed.xml">
         <link rel="alternate" type="application/atom+xml" title="Haskell without remorse" href="./atom.xml">
     </head>
@@ -27,6 +29,14 @@
                 <h1>Home</h1>
 
                 
+  <div class="post-preview">
+    <h2>Live profiling RTS progress <span class="postinfo">June 22, 2016</span></h2>
+    <p class="postdesc">
+      <a href="./posts/2016-06-22-hsoc-rts.html"><img class="post-preview-img" align="left" src="images/rts-overview.png"></a>
+      During the last week I was implementing base RTS features to support live event logging in GHC. I tried several design choices for eventlog piping to Haskell side, some of them being tempting leads to non-obvious problems with multithreaded environment or causes deadlocks. As a result, RTS now can redirect events into user specified file descriptor and pipe them via extendable memory buffer. <a href="./posts/2016-06-22-hsoc-rts.html#disqus_thread">Read more...</a>
+    </p>
+  </div>
+
   <div class="post-preview">
     <h2>Live profiling and performance monitoring server <span class="postinfo">June 12, 2016</span></h2>
     <p class="postdesc">

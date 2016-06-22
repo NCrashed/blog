@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>Haskelling without remorse - Live profiling RTS progress</title>
+        <link href="https://fonts.googleapis.com/css?family=Roboto+Slab&subset=latin,cyrillic-ext" rel="stylesheet" type="text/css">
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+        <link rel="stylesheet" type="text/css" href="../css/spoiler.css" />
+        <link rel="alternate" type="application/rss+xml" title="Haskell without remorse" href="./feed.xml">
+        <link rel="alternate" type="application/atom+xml" title="Haskell without remorse" href="./atom.xml">
+    </head>
+    <body>
+        <div id="container">
+            <div id="header">
+                <div id="logo">
+                    <a href="../">Haskelling without remorse</a>
+                </div>
+                <div id="navigation">
+                    <a href="../">Home</a>
+                    <a href="../about.html">About</a>
+                    <a href="../contact.html">Contact</a>
+                    <a href="../feed.xml">RSS</a>
+                </div>
+            </div>
+
+            <div id="content">
+                <h1>Live profiling RTS progress</h1>
+
+                <div class="info">
+    Posted on June 22, 2016
+    
+</div>
+
+<div class="post-body">
+<p>The heavy work under my <a href="http://ncrashed.github.io/blog/posts/2016-06-12-hsoc-acceptance.htm">HSOC project</a> has begun. The first and the most important point in my plan is implementation of RTS API for following actions with the eventlog subsystem:</p>
+<ul>
+<li><p>Redirecting event stream to user specified file descriptor.</p></li>
+<li><p>Piping all events via memory into the Haskell side.</p></li>
+<li><p>Dynamic resizing of internal buffers.</p></li>
+</ul>
+<p>The patched GHC repo is located <a href="https://github.com/NCrashed/ghc">here</a> and the current Haskell side repo is <a href="https://github.com/NCrashed/live-profile-monitor">here</a>.</p>
+<div class="spoiler">
+<input id="spoilerid_1" type="checkbox"><label for="spoilerid_1"> The new public RTS API for event logging looks like: </label>
+<div class="spoiler_body">
+<div class="sourceCode"><pre class="sourceCode c"><code class="sourceCode c"><span class="co">/*</span>
+<span class="co"> * Set custom file stream for global event log sink.</span>
+<span class="co"> *</span>
+<span class="co"> * The function overwrites previous event log file pointer. Previous </span>
+<span class="co"> * sink is closed only if closePrev flag is on.</span>
+<span class="co"> *</span>
+<span class="co"> * Writing to the sink is protected by global mutex.</span>
+<span class="co"> *</span>
+<span class="co"> * The function puts header to the new sink only when emitHeader flag</span>
+<span class="co"> * is on. User might not want the header if it is switching to </span>
+<span class="co"> * already existed eventlog handle that was switched away recently.</span>
+<span class="co"> */</span>
+<span class="dt">void</span> rts_setEventLogSink(FILE *sink,
+                         StgBool closePrev,
+                         StgBool emitHeader);
+
+<span class="co">/*</span>
+<span class="co"> * Get current file stream that is used for global event log sink.</span>
+<span class="co"> *</span>
+<span class="co"> * You shouldn't do anything with the pointer until </span>
+<span class="co"> * rts_setEventLogSink(otherFileOrNull, false) is called. After that </span>
+<span class="co"> * you can do anything with the file stream.</span>
+<span class="co"> */</span>
+FILE* rts_getEventLogSink(<span class="dt">void</span>);
+
+<span class="co">/*</span>
+<span class="co"> * If RTS started with '-lm' flag then eventlog is stored in memory buffer.</span>
+<span class="co"> * </span>
+<span class="co"> * The function allows to pop chunks of the buffer. Return value of 0 means</span>
+<span class="co"> * that there is no any filled chunk of data.</span>
+<span class="co"> *</span>
+<span class="co"> * If the function returns nonzero value the parameter contains full chunk </span>
+<span class="co"> * of eventlog data with size of the returned value. Caller must free the</span>
+<span class="co"> * buffer, the buffer isn't referenced anywhere anymore.</span>
+<span class="co"> *</span>
+<span class="co"> * If nobody calls the function with '-lm' flag then the memory is kinda</span>
+<span class="co"> * to be exhausted.</span>
+<span class="co"> */</span>
+StgWord64 rts_getEventLogChunk(StgInt8 **ptr);
+
+<span class="co">/*</span>
+<span class="co"> * Reallocate inner buffers to match the new size. The size should be not</span>
+<span class="co"> * too small to contain at least one event.</span>
+<span class="co"> *</span>
+<span class="co"> * If RTS started with '-lm' the chunks of memory buffer is also resized.</span>
+<span class="co"> */</span>
+<span class="dt">void</span> rts_resizeEventLog(StgWord64 size);
+
+<span class="co">/*</span>
+<span class="co"> * Return current size of eventlog buffers.</span>
+<span class="co"> */</span>
+StgWord64 rts_getEventLogBuffersSize(<span class="dt">void</span>);</code></pre></div>
+</div>
+</div>
+<div class="spoiler">
+<input id="spoilerid_2" type="checkbox"><label for="spoilerid_2"> With Haskell side API: </label>
+<div class="spoiler_body">
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- | The 'setEventLogHandle' function changes current sink of the eventlog, if eventlog</span>
+<span class="co">-- profiling is available and enabled at runtime.</span>
+<span class="fu">--</span>
+<span class="co">-- The second parameter defines whether old sink should be finalized and closed or not. </span>
+<span class="co">-- Preserving it could be helpful for temporal redirection of eventlog data into not </span>
+<span class="co">-- standard sink and then restoring to the default file sink.</span>
+<span class="fu">--</span>
+<span class="co">-- The third parameter defines whether new header section should be emitted to the new</span>
+<span class="co">-- sink. Emitting header to already started eventlog streams will corrupt the structure </span>
+<span class="co">-- of eventlog format.</span>
+
+<span class="co">-- @since 4.10.0.0</span>
+<span class="ot">setEventLogHandle ::</span> <span class="dt">Handle</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()
+
+<span class="co">-- | The 'setEventLogCFile' function changes current sink of the eventlog, if eventlog</span>
+<span class="co">-- profiling is available and enabled at runtime.</span>
+<span class="fu">--</span>
+<span class="co">-- The second parameter defines whether old sink should be finalized and closed or not. </span>
+<span class="co">-- Preserving it could be helpful for temporal redirection of eventlog data into not </span>
+<span class="co">-- standard sink and then restoring to the default file sink.</span>
+<span class="fu">--</span>
+<span class="co">-- The third parameter defines whether new header section should be emitted to the new</span>
+<span class="co">-- sink. Emitting header to already started eventlog streams will corrupt the structure </span>
+<span class="co">-- of eventlog format.</span>
+<span class="fu">--</span>
+<span class="co">-- The function is more low-level than 'setEventLogHandle' but doesn't recreate underlying</span>
+<span class="co">-- file descriptor and is intended to use with 'getEventLogCFile' to save and restore </span>
+<span class="co">-- current sink of the eventlog.</span>
+<span class="fu">--</span>
+<span class="co">-- @since 4.10.0.0</span>
+<span class="ot">setEventLogCFile ::</span> <span class="dt">Ptr</span> <span class="dt">CFile</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()
+
+<span class="co">-- | The 'getEventLogCFile' function returns current sink of the eventlog, if eventlog</span>
+<span class="co">-- profiling is available and enabled at runtime.</span>
+<span class="fu">--</span>
+<span class="co">-- The function is intented to be used with 'setEventLogCFile' to save and restore </span>
+<span class="co">-- current sink of the eventlog.</span>
+<span class="fu">--</span>
+<span class="co">-- @since 4.10.0.0</span>
+<span class="ot">getEventLogCFile ::</span> <span class="dt">IO</span> (<span class="dt">Ptr</span> <span class="dt">CFile</span>)
+
+<span class="co">-- | Setting size of internal eventlog buffers. The size should be not</span>
+<span class="co">-- too small to contain at least one event.</span>
+<span class="fu">--</span>
+<span class="co">-- If RTS started with '-lm' the chunks of memory buffer is also resized.</span>
+<span class="fu">--</span>
+<span class="co">-- The larger the buffers the lesser overhead from event logging, but </span>
+<span class="co">-- larger delays between data dumps.</span>
+<span class="fu">--</span>
+<span class="co">-- See also: 'getEventLogChunk', 'getEventLogBufferSize'</span>
+<span class="ot">setEventLogBufferSize ::</span> <span class="dt">Word</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()
+
+<span class="co">-- | Getting size of internal eventlog buffers.</span>
+<span class="fu">--</span>
+<span class="co">-- See also: 'setEventLogBufferSize', 'getEventLogChunk'</span>
+<span class="ot">getEventLogBufferSize ::</span> <span class="dt">IO</span> <span class="dt">Word</span>
+
+<span class="co">-- | Get next portion of the eventlog data.</span>
+<span class="fu">--</span>
+<span class="co">-- If RTS started with '-lm' flag then eventlog is stored in memory buffer.</span>
+<span class="co">-- </span>
+<span class="co">-- The function allows to pop chunks out of the buffer. Return value of Nothing </span>
+<span class="co">-- means that there is no any filled chunk of data.</span>
+<span class="fu">--</span>
+<span class="co">-- If the function returns nonzero value the parameter contains full chunk </span>
+<span class="co">-- of eventlog data with size of the returned value. Caller must free the</span>
+<span class="co">-- buffer with 'free' from 'Foreign.Marshal.Alloc', the buffer isn't referenced </span>
+<span class="co">-- anywhere anymore.</span>
+<span class="fu">--</span>
+<span class="co">-- If nobody calls the function with '-lm' flag on then the memory is kinda</span>
+<span class="co">-- to be exhausted.</span>
+<span class="fu">--</span>
+<span class="co">-- If '-lm' flag is off, the function returns always 'Nothing'.</span>
+<span class="fu">--</span>
+<span class="co">-- See also: 'setEventLogBufferSize'</span>
+<span class="ot">getEventLogChunk ::</span> <span class="dt">IO</span> (<span class="dt">Maybe</span> <span class="dt">CStringLen</span>)</code></pre></div>
+</div>
+</div>
+<h2 id="design-choices">Design choices</h2>
+<p>To get data from RTS side about occured events one can imagine three different approaches.</p>
+<h3 id="substitution-of-file-descriptor">Substitution of file descriptor</h3>
+<p>The idea is simple, user specifies own file descriptor as sink for the eventlog. The most easiest solution to implement, but has some caveats.</p>
+<p>Firstly, you will ultimately skip initial events that carry very important info about capability sets, program arguments and spawned threads. The events are spawned before the main thread starts, so you cannot redirect the events to custom sink. The caveat could be workarounded by force flushing the default eventlog file and reading the initial events from it.</p>
+<p>Secondly, one should use memory pipes represented as a file descriptor (<code>FILE*</code> actually), that is quite platform dependent. POSIX systems can use <a href="http://linux.die.net/man/3/mkfifo">mkfifo(3)</a> and Windows has its own <a href="https://msdn.microsoft.com/en-us/library/windows/desktop/aa365590(v=vs.85).aspx">NamesPipes</a>. And finally, I quickly hit an issue when RTS blocks on writing to the pipe (created with <code>mkfifo</code>) as reader thread in Haskell side was slower than writer on the RTS side.</p>
+<p>Despite the problems I encountered, the file descriptor substitution API that I implemented is still useful for temporal eventlog disabling (setting <code>NULL</code> as descriptor) and for simple tasks like redirecting the events to non-standard file.</p>
+<h3 id="making-arbitrary-hook-on-data-dumping">Making arbitrary hook on data dumping</h3>
+<p>It is the most flexible solution one can imagine as user can do anything with the data passed into the hook. But after some brainstorming of call sequence I realized that the approach is likely to cause deadlocks.</p>
+<p>Let’s say we made a Haskell hook that writes to some memory buffer or socket. During the action a GC or other events might occur that can overflow an internal buffer. Global eventlog sink is protected by a mutex that is kept when we enters the hook callback, and the hook will provoke another eventlog dump that tries to acquire lock of the mutex again. Despite the fact of double locking of the mutex there would be possible infinite recursive call of the hook as each callback call can provoke the eventlog dumping.</p>
+<div class="figure">
+<img src="../images/eternal_hooking.png#center" />
+
+</div>
+<p>I was playing around with the hook implementations and found another source of problems. If the hook contains internal foreign calls the RTS will crash with <code>reentered to scheduler</code> error. The problem can be easyly hit by using POSIX memory pipes as they require some foreign calls.</p>
+<p>The only safe way of using such hook is use it only from C code or any other language that cannot produce new eventlog messages. I decided to remove the hooking API from RTS when superseding design was implemented. It was simply too dangerous to use.</p>
+<h3 id="storing-in-memory">Storing in memory</h3>
+<p>The most complicated solution when RTS has its own extendible memory buffer to store eventlog data until Haskell side not consume it. The tricky part is maintaining of memory usage, the method I designed is shown on the picture below. RTS keeps a linked list of memory blobs where new events are pushed to tail and the Haskell side pops out the head of buffer.</p>
+<div class="figure">
+<img src="../images/chunked_buffer.png#center" />
+
+</div>
+<p>The solution is portable and has advantage in reusing of memory of popped chunks. I create a bytestring from the buffer without copying from the popped chunked. So I have sticked to the solution as good enough.</p>
+<p>The buffer is created and used only when special RTS flag <code>-lm</code> is set to prevent occasional memory exhaustion when nobody pops the log head.</p>
+<h2 id="the-story-about-reallocation">The story about reallocation</h2>
+<p>I have run into numerous segfaults on my way to operational design with dynamically sized buffers. The main reason of segfaults was that not all eventlog operations are protected by mutexes. As each capability has its own buffer, there is no need for locking that is very expensive. The diagram of data flow is presented below.</p>
+<div class="figure">
+<img src="../images/rts_eventlog.png#center" />
+
+</div>
+<p>I successfully designed a solution when no additional locks are needed. The Haskell side posts only a request for resize and actual resizing is performed by the capability that owns a buffer being resized. Now user can control granularity of live logging as smaller buffers will flush frequently.</p>
+<h2 id="haskell-side">Haskell side</h2>
+<p>Currently Haskell side library for live monitor simply prints results of incremental parsing of the eventlog piped from chunked buffer. Thanks a lot to Karl Velicka for amazing <a href="https://github.com/haskell/ghc-events/pull/13">PR</a> with incremental parser for <code>ghc-events</code>!</p>
+<p>My next goal is entention of the library to support TCP/UDP protocol for communication with future live profiler client. There is important constituent part of eventlog state management that have to support connecting and disconnecting clients at arbitrary time.</p>
+</div>
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+    
+    /*
+    var disqus_config = function () {
+        this.page.url = '/posts/2016-06-22-hsoc-rts.html';  // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+    */
+
+    (function() {  // DON'T EDIT BELOW THIS LINE
+        var d = document, s = d.createElement('script');
+        
+        s.src = '//haskellwithoutremorse.disqus.com/embed.js';
+        
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+            </div>
+            <div id="footer">
+                Blog powered by
+                <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+            </div>
+        </div>
+    <script id="dsq-count-scr" src="//haskellwithoutremorse.disqus.com/count.js" async></script>
+    </body>
+</html>
