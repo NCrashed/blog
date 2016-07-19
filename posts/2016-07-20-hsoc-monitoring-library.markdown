@@ -18,7 +18,7 @@ The live profile monitor is designed for:
 
 ## Design 
 
-After several false starts I have finally found a design that works well to fulfill above goals:
+After several false starts I have finally found a design that works well to fulfill goals above:
 
 ![](/images/live-profile-monitor-data-flow.png#center)
 
