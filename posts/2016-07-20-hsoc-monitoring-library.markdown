@@ -1,6 +1,6 @@
 ---
 title: Live profile monitor
-image: images/haskell-logo.png
+image: images/socket.png
 description: Another big chunk of work is done for my HSOC project - live-profile-monitor which transfers events to remote profiling tool.
 ---
 
