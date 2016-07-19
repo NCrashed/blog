@@ -1,0 +1,44 @@
+[23:39] <ncrashed> Hi everyone! I am currently working at haskell summer of code project for implementing eventlog live profiler
+[23:40] <ncrashed> I have run into some design problems on the RTS side, if somebody who familiar with implementation details could give an advice, it would be great
+[23:40] *** Cale_ is now known as Cale.
+[23:42] <ezyang> ncrashed: Ask away
+[23:46] <ncrashed> I need to track state of the eventlog, wich threads are alive, which one is stopped or dead. As RTS doesn't have facilities to query the info I decided to collect the info from incoming trace events (is that good idea?), but with the aproach I cannot detect whether the thread is blocked and GC'ed or it can resume. 
+[23:47] <ncrashed> So can I check if the thread with given id is still alive?
+[23:47] <ezyang> ncrashed: Hmm. Can you post the GSOC description / design stuff somewhere?
+[23:47] <ezyang> I am not sure what level of abstraction you are operating, but if you have a ThreadId, BY DEFINITION the thread is alive
+[23:47] <ezyang> the ThreadId functions as a root
+[23:47] <ezyang> If you have a weak pointer to the ThreadId, then you can just check if the weak pointer is still live or not
+[23:48] <ncrashed> http://ncrashed.github.io/blog/ there I have posted the design 
+[23:48] <ncrashed> But the particular problem is rather new, so it is not described there
+[23:49] <ncrashed> I don't have ThreadId#, I have thread id as word that came into eventlog
+[23:49] <-- wootehfoot (~wootehfoo@cust-95-80-56-51.csbnet.se) has left this server (Ping timeout: 240 seconds).
+[23:49] <ezyang> aha!
+[23:49] <ezyang> So, I don't know the answer, but here is how I would find out:
+[23:49] <ezyang> (1) How does eventlog allocate these words? Should be somewhere in the RTS EventLog code.
+[23:50] <ezyang> In particular, how does it know that it hasn't already used the number before?
+[23:50] <ezyang> and how does it know how to map a StgTSO object into a word?
+[23:50] <ezyang> Find that out, and maybe you'll find the mapping you need
+[23:51] <ezyang> If not, you'll have to do something else
+[23:51] <ncrashed> The way traced me to scheduler which passes TSO object into trace functions, and the id is got from the TSO
+[23:51] <ezyang> ok
+[23:52] <ncrashed> I had idea to traverse cap private queue of threads by myself, but something tells me that is bad design choice
+[23:52] <ezyang> One possibility is to extend EventLog so that it can emit events when threads stop and die
+[23:53] <ezyang> let me look at your blog post, I don't understand what you are trying to do
+[23:53] <ezyang> So, can you just punt this for now?
+[23:55] <ncrashed> Unfortunally no, the state tracking was on haskell side, but it wasn't able to consume all events on time as incremental parser emits more events by itself than is able to read
+[23:56] <ezyang> ok, so walk me through this.  Why is the state tracking in the same process as wher ethe eventlog comes from?
+[23:57] <ezyang> is it for "Defining new hook type that is called when eventlog buffer is full. "
+[23:57] <ncrashed> When a remote tool connects to the process profiled I need to send current state of caps and threads to it
+[23:57] <ezyang> OK, humo me. "Why."
+[23:57] <ezyang> *humor
+[23:58] <ncrashed> hmmm, it is a good question O_O
+[23:59] <ezyang> One reasonable asnwer is, "Because if I don't get to see the entire history of the eventlog stream, it's harder to do a reasonable visualization"
+[23:59] <ncrashed> yep it is, but actually it can restore it incrementally 
+[23:59] <ezyang> ok, so can you punt on this issue then? ;)
+[00:00] <ncrashed> yep, now I can 
+[00:00] <ezyang> good!
+[00:00] <ncrashed> and now I can take rid of eventlog parser on side beeing profiled
+[00:01] <ncrashed> and I should write down the observations into a new blog post...
+[00:01] <ncrashed> Thank you, you saved my day! ^^
+[00:01] <ezyang> well, make sure this all makes sense. I don't have a full picture of the design so I may be missing something.
+[00:02] <ncrashed> I will check it out and return if I found more problems
