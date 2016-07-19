@@ -8,8 +8,16 @@
         <name>Anton Gushcha</name>
         <email>ncrashed@gmail.com</email>
     </author>
-    <updated>2016-06-22T00:00:00Z</updated>
+    <updated>2016-07-20T00:00:00Z</updated>
     <entry>
+    <title>Live profile monitor</title>
+    <link href="http://ncrashed.github.io/blog/posts/2016-07-20-hsoc-monitoring-library.html" />
+    <id>http://ncrashed.github.io/blog/posts/2016-07-20-hsoc-monitoring-library.html</id>
+    <published>2016-07-20T00:00:00Z</published>
+    <updated>2016-07-20T00:00:00Z</updated>
+    <summary type="html"><![CDATA[Another big chunk of work is done for my HSOC project - live-profile-monitor which transfers events to remote profiling tool.]]></summary>
+</entry>
+<entry>
     <title>Live profiling RTS progress</title>
     <link href="http://ncrashed.github.io/blog/posts/2016-06-22-hsoc-rts.html" />
     <id>http://ncrashed.github.io/blog/posts/2016-06-22-hsoc-rts.html</id>

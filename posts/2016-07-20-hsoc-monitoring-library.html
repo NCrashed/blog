@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>Haskelling without remorse - Live profile monitor</title>
+        <link href="https://fonts.googleapis.com/css?family=Roboto+Slab&subset=latin,cyrillic-ext" rel="stylesheet" type="text/css">
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+        <link rel="stylesheet" type="text/css" href="../css/spoiler.css" />
+        <link rel="alternate" type="application/rss+xml" title="Haskell without remorse" href="./feed.xml">
+        <link rel="alternate" type="application/atom+xml" title="Haskell without remorse" href="./atom.xml">
+    </head>
+    <body>
+        <div id="container">
+            <div id="header">
+                <div id="logo">
+                    <a href="../">Haskelling without remorse</a>
+                </div>
+                <div id="navigation">
+                    <a href="../">Home</a>
+                    <a href="../about.html">About</a>
+                    <a href="../contact.html">Contact</a>
+                    <a href="../feed.xml">RSS</a>
+                </div>
+            </div>
+
+            <div id="content">
+                <h1>Live profile monitor</h1>
+
+                <div class="info">
+    Posted on July 20, 2016
+    
+</div>
+
+<div class="post-body">
+<p>Another big chunk of work is done for my <a href="2016-06-12-hsoc-acceptance.html">HSOC project</a> - <a href="https://github.com/NCrashed/live-profile-monitor">live-profile-monitor</a> which transfers events to remote profiling tool.</p>
+<h2 id="goals-and-purpose">Goals and purpose</h2>
+<p>The live profile monitor is designed for:</p>
+<ul>
+<li><p>Transfering eventlog from locally running application to the remote host by TCP/UDP protocols.</p></li>
+<li><p>Causing as little disturbance in the profiling application as possible. Also we should not bloat dependency list of user application.</p></li>
+<li><p>Keeping track of live RTS objects that are important for profilers and transfering the collected stats to recently connected clients (profiling tools).</p></li>
+</ul>
+<h2 id="design">Design</h2>
+<p>After several false starts I have finally found a design that works well to fulfill above goals:</p>
+<div class="figure">
+<img src="../images/live-profile-monitor-data-flow.png#center" />
+
+</div>
+<p>The monitor is splitted into three parts: the leech, the server and the client.</p>
+<p>The leech is small library almost written in C language that you link into your application. It leeches to the RTS source of events and transfers them into interprocess pipe (<a href="http://linux.die.net/man/3/mkfifo">mkfifo</a> on GNU/Linux and <a href="https://msdn.microsoft.com/en-us/library/windows/desktop/aa365590(v=vs.85).aspx">named pipe</a> on Windows). The library uses <code>pthreads</code> for concurrency and depends only on <code>base</code> package. The way the leech gets events is based on chunked buffer API described in <a href="2016-06-22-hsoc-rts.html">previous blog post</a>.</p>
+<p>The server is heavy Haskell application that is separated from the application being profiled. We have to parse events on the server side in order to track state of eventlog:</p>
+<ul>
+<li><p>alive and stopped threads;</p></li>
+<li><p>capabilities and set of capabilities;</p></li>
+<li><p>tasks;</p></li>
+<li><p>environment variables and command line arguments;</p></li>
+<li><p>heap and GC statistics;</p></li>
+<li><p>RTS parameters.</p></li>
+</ul>
+<p>As I hold in mind UDP transport layer the events are serialised into datagram protocol that also includes service messages and special statistics messages. Although the UDP reliability level isn’t implemented (some messages should be definitely delivered), the basement of the feature is founded.</p>
+<p>Finally, the client library helps remote tool to understand server protocol. At the moment, the client side API looks like.</p>
+<div class="spoiler">
+<input id="spoilerid_1" type="checkbox"><label for="spoilerid_1"> Client API </label>
+<div class="spoiler_body">
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- | Customisable behavior of the eventlog client</span>
+<span class="kw">data</span> <span class="dt">ClientBehavior</span> <span class="fu">=</span> <span class="dt">ClientBehavior</span> {
+<span class="co">-- | Callback that is called when the client receives full header of the remote eventlog</span>
+<span class="ot">  clientOnHeader ::</span> <span class="fu">!</span>(<span class="dt">Header</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ())  
+<span class="co">-- | Callback that is called when the client receives a remote event</span>
+,<span class="ot"> clientOnEvent ::</span> <span class="fu">!</span>(<span class="dt">Event</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()) 
+<span class="co">-- | Callback that is called when the client receives service message from the server</span>
+,<span class="ot"> clientOnService ::</span> <span class="fu">!</span>(<span class="dt">ServiceMsg</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()) 
+<span class="co">-- | Callback that is called when the client receives dump of eventlog alive objects</span>
+,<span class="ot"> clientOnState ::</span> <span class="fu">!</span>(<span class="dt">EventlogState</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()) 
+}
+
+<span class="co">-- | Termination mutex, all threads are stopped when the mvar is filled</span>
+<span class="kw">type</span> <span class="dt">Termination</span> <span class="fu">=</span> <span class="dt">MVar</span> ()
+
+<span class="co">-- | Pair of mutex, first one is used as termination of child thread,</span>
+<span class="co">-- the second one is set by terminated client wich helps to hold on</span>
+<span class="co">-- parent thread from exiting too early.</span>
+<span class="kw">type</span> <span class="dt">TerminationPair</span> <span class="fu">=</span> (<span class="dt">Termination</span>, <span class="dt">Termination</span>)
+
+<span class="co">-- | Connect to remote app and recieve eventlog from it.</span>
+<span class="ot">startLiveClient ::</span> <span class="dt">LoggerSet</span> <span class="co">-- ^ Monitor logging messages sink</span>
+  <span class="ot">-&gt;</span> <span class="dt">LiveProfileClientOpts</span> <span class="co">-- ^ Options for client side</span>
+  <span class="ot">-&gt;</span> <span class="dt">TerminationPair</span>  <span class="co">-- ^ Termination protocol</span>
+  <span class="ot">-&gt;</span> <span class="dt">ClientBehavior</span> <span class="co">-- ^ User specified callbacks </span>
+  <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">ThreadId</span> <span class="co">-- ^ Starts new thread that connects to remote host and </span></code></pre></div>
+</div>
+</div>
+<h2 id="what-is-planned-next">What is planned next</h2>
+<ul>
+<li><p>Implement platform specific code for Windows (named pipes). At the moment only the <code>mkfifo</code> variant is ready.</p></li>
+<li><p>Factor out client library and protocol into separate packages to minimise amount of code that a profiling tool should depend on.</p></li>
+<li><p>Add some service messages for to pause/unpause eventlog, resend the RTS statistics on demand.</p></li>
+<li><p>Start work under web based profiling tool.</p></li>
+<li><p>Add UDP transport with reliability: implement by myself or reuse existing piece of software (possible candidate is <a href="https://hackage.haskell.org/package/henet">henet</a>).</p></li>
+</ul>
+</div>
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+    
+    /*
+    var disqus_config = function () {
+        this.page.url = '/posts/2016-07-20-hsoc-monitoring-library.html';  // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+    */
+
+    (function() {  // DON'T EDIT BELOW THIS LINE
+        var d = document, s = d.createElement('script');
+        
+        s.src = '//haskellwithoutremorse.disqus.com/embed.js';
+        
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+            </div>
+            <div id="footer">
+                Blog powered by
+                <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+            </div>
+        </div>
+    <script id="dsq-count-scr" src="//haskellwithoutremorse.disqus.com/count.js" async></script>
+    </body>
+</html>

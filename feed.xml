@@ -7,8 +7,16 @@
         <description><![CDATA[Blog about Haskell development]]></description>
         <atom:link href="http://ncrashed.github.io/blog/feed.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Wed, 22 Jun 2016 00:00:00 UT</lastBuildDate>
+        <lastBuildDate>Wed, 20 Jul 2016 00:00:00 UT</lastBuildDate>
         <item>
+    <title>Live profile monitor</title>
+    <link>http://ncrashed.github.io/blog/posts/2016-07-20-hsoc-monitoring-library.html</link>
+    <description><![CDATA[Another big chunk of work is done for my HSOC project - live-profile-monitor which transfers events to remote profiling tool.]]></description>
+    <pubDate>Wed, 20 Jul 2016 00:00:00 UT</pubDate>
+    <guid>http://ncrashed.github.io/blog/posts/2016-07-20-hsoc-monitoring-library.html</guid>
+    <dc:creator>Anton Gushcha</dc:creator>
+</item>
+<item>
     <title>Live profiling RTS progress</title>
     <link>http://ncrashed.github.io/blog/posts/2016-06-22-hsoc-rts.html</link>
     <description><![CDATA[During the last week I was implementing base RTS features to support live event logging in GHC. I tried several design choices for eventlog piping to Haskell side, some of them being tempting leads to non-obvious problems with multithreaded environment or causes deadlocks. As a result, RTS now can redirect events into user specified file descriptor and pipe them via extendable memory buffer.]]></description>
