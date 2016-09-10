@@ -110,3 +110,8 @@ img[src*='#center']{
     margin: 0 auto;
     display: block;
 }
+img[src*='#center-sized']{     
+    margin: 0 auto;
+    display: block;
+    width: 100%;
+}
