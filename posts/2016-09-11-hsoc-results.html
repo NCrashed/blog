@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>Haskelling without remorse - HSOC Results</title>
+        <link href="https://fonts.googleapis.com/css?family=Roboto+Slab&subset=latin,cyrillic-ext" rel="stylesheet" type="text/css">
+        <link href="https://fonts.googleapis.com/css?family=Gentium+Book+Basic" rel="stylesheet"> 
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+        <link rel="stylesheet" type="text/css" href="../css/spoiler.css" />
+        <link rel="alternate" type="application/rss+xml" title="Haskell without remorse" href="./feed.xml">
+        <link rel="alternate" type="application/atom+xml" title="Haskell without remorse" href="./atom.xml">
+    </head>
+    <body>
+        <div id="container">
+            <div id="header">
+                <div id="logo">
+                    <a href="../">Haskelling without remorse</a>
+                </div>
+                <div id="navigation">
+                    <a href="../">Home</a>
+                    <a href="../about.html">About</a>
+                    <a href="../contact.html">Contact</a>
+                    <a href="../feed.xml">RSS</a>
+                </div>
+            </div>
+
+            <div id="content">
+                <h1>HSOC Results</h1>
+
+                <div class="info">
+    Posted on September 11, 2016
+    
+</div>
+
+<div class="post-body">
+<p>The summer was awesome, I finally pushed the HSOC “Live profiling and performance monitoring server” project to consistent state. Most features are implemented and changes to GHC are submitted to Phabricator.</p>
+<h2 id="live-profile-server">Live profile server</h2>
+<p><a href="https://github.com/NCrashed/live-profile-server">The server</a> is a web based application to view and manage eventlogs that are uploaded manually or received from <a href="https://github.com/NCrashed/live-profile-monitor">live-profile-monitor</a>.</p>
+<p>At the moment server is able to produce <a href="http://www.well-typed.com/blog/86/">ghc-events-analyze</a> like diagrams:</p>
+<div class="figure">
+<img src="../images/screen-fib-bined.png#center-sized" />
+
+</div>
+<p>The server backend is based on <a href="http://haskell-servant.readthedocs.io/en/stable/">servant</a> library and the frontend is developed with GHCJS and <a href="https://github.com/reflex-frp/reflex-platform">reflex-dom</a>. Diagrams are rendered with <a href="https://hackage.haskell.org/package/diagrams-reflex">diagrams-reflex</a> backend for <a href="http://projects.haskell.org/diagrams/">diagrams</a> library.</p>
+<p>The current implementation transforms an event log into relational model and stores in SQL database. Then the model is queried by <a href="https://hackage.haskell.org/package/esqueleto">esqueleto</a> queries to collect statistics for diagrams render. That is a little too slow and I plan to use memory cache for future implementation diagrams that are updated on fly with fresh events from a live monitor.</p>
+<p>You can try it alive at <a href="http://liveprofile.teaspotstudio.ru">debug server</a>. With guest permissions one can view logs and diagrams and also upload eventlog files. Sorry for poor performance of rendering it can take up to 7 minutes to render a diagram for 50 MB log. I have ideas how to fix this, but I haven’t implemented them yet.</p>
+<h2 id="rts-patches">RTS patches</h2>
+<p>I finally submitted the RTS changes to <a href="https://ghc.haskell.org/trac/ghc/ticket/12582">Trac</a> and <a href="https://phabricator.haskell.org/D2522">Phabricator</a>. The diff is pending for a review.</p>
+<h2 id="summary">Summary</h2>
+<p>Which goals are achieved at the moment:</p>
+<ul>
+<li><a href="https://phabricator.haskell.org/D2522">RTS side</a>:</li>
+</ul>
+<ol style="list-style-type: decimal">
+<li><p>Redirecting eventlog to user specified file descriptor.</p></li>
+<li><p>Storing eventlog in memory and ability to retreive the events chunks from it.</p></li>
+<li><p>Dynamic resizing of eventlog buffers.</p></li>
+</ol>
+<ul>
+<li><a href="https://github.com/NCrashed/live-profile-monitor">Monitor</a>:</li>
+</ul>
+<ol style="list-style-type: decimal">
+<li><p>Connection to profiled application via small “leech” library and FIFO pipe.</p></li>
+<li><p>Collecting eventlog state and sending it by request of remote profiling tool.</p></li>
+<li><p>Transmission protocol between the monitor and remote tool. Robust implementation is TCP one, but the protocol designed to be used with datagrams for UDP future support.</p></li>
+</ol>
+<ul>
+<li><a href="https://github.com/NCrashed/live-profile-server">Server</a>:</li>
+</ul>
+<ol style="list-style-type: decimal">
+<li><p>Getting logs by live connection to remote monitor or by manual upload via web frontend.</p></li>
+<li><p>Management of connections and sessions.</p></li>
+<li><p>ghc-events-analyze like graphics.</p></li>
+<li><p>Authorisation system.</p></li>
+</ol>
+<p>As byproduct I extracted some packages that can be useful on its own:</p>
+<ul>
+<li><p><a href="http://hackage.haskell.org/package/aeson-injector">aeson-injector</a> - simple way to wrap into a JSON object plain value or insert a JSON field to your data.</p></li>
+<li><p><a href="http://hackage.haskell.org/package/servant-auth-token-api">servant-auth-token-api</a> - token based authorisation API for servant.</p></li>
+<li><p><a href="http://hackage.haskell.org/package/servant-auth-token">servant-auth-token</a> - an implementation of <code>servant-auth-token-api</code> that can be easily embeded in your server.</p></li>
+</ul>
+<h2 id="servant-rest-derive">servant-rest-derive</h2>
+<p>Also I had some fun with <a href="http://hackage.haskell.org/package/vinyl">vinyl</a>, servant and persistent. I got a automatic deriving of RESTful API and server from only a vinyl record definition. It looks like:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- | Connection to remote application</span>
+<span class="kw">type</span> <span class="dt">Connection</span> <span class="fu">=</span> <span class="dt">FieldRec</span> <span class="ch">'[</span>
+    <span class="ch">'(&quot;name&quot;, Text)</span>
+  , <span class="ch">'(&quot;host&quot;, Text)</span>
+  , <span class="ch">'(&quot;port&quot;, Word)</span>
+  , <span class="ch">'(&quot;lastUsed&quot;, Maybe UTCTime)</span>
+  ]
+
+<span class="kw">instance</span> <span class="dt">Named</span> <span class="dt">Connection</span> <span class="kw">where</span> 
+  getName _ <span class="fu">=</span> <span class="st">&quot;Connection&quot;</span>
+
+<span class="co">-- | Correspoinding patch record</span>
+<span class="fu">$</span>(declareVinylPatch <span class="ch">''</span><span class="dt">Connection</span>)
+
+<span class="co">-- | API about connections to remote Haskell applications that we profile</span>
+<span class="kw">type</span> <span class="dt">ConnectionAPI</span> <span class="fu">=</span> <span class="st">&quot;connection&quot;</span> <span class="fu">:&gt;</span> <span class="dt">RESTFull</span> <span class="dt">Connection</span> <span class="st">&quot;connection&quot;</span></code></pre></div>
+<p>This was for API deriving, and server side deriving (with full support of Persistent library):</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">connectionServer ::</span> <span class="dt">ServerT</span> <span class="dt">ConnectionAPI</span> <span class="dt">App</span> 
+connectionServer <span class="fu">=</span> restServer (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="ch">'[ '</span><span class="dt">GET</span>, <span class="ch">'POST, '</span><span class="dt">PUT</span>, <span class="ch">'PATCH, '</span><span class="dt">DELETE</span>]) 
+  (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">Connection</span>) (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="st">&quot;connection&quot;</span>)
+  (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">App</span>)</code></pre></div>
+<p>I am going to make a several blog post about the type level magic that was used to implement this. Also, to publish independent packages for automatic deriving of REST servers. At the moment the packages are located at the <code>live-profile-server</code> repo, see <code>servant-rest-derive</code> and <code>servant-rest-derive-server</code> subfolders.</p>
+<h2 id="future-work">Future work</h2>
+<p>I am not going to drop the project, as it is far from state that is helpful at production. Following features are next to do:</p>
+<ul>
+<li><p>Render diagrams on the fly. The current implementation renders a particular snapshot of log and is too slow to be used for live data.</p></li>
+<li><p>Add thread scope like diagrams and heap statistics diagrams that can be extracted from eventlog.</p></li>
+<li><p>Multi user mode for server. An user should be able to upload private logs that are not shown to other users.</p></li>
+<li><p>Options for 24/7 monitoring of servers, that requires specific settings, for instance, when to drop old events from DB or which types of statistics to save for long term.</p></li>
+</ul>
+</div>
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+    
+    /*
+    var disqus_config = function () {
+        this.page.url = '/posts/2016-09-11-hsoc-results.html';  // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+    */
+
+    (function() {  // DON'T EDIT BELOW THIS LINE
+        var d = document, s = d.createElement('script');
+        
+        s.src = '//haskellwithoutremorse.disqus.com/embed.js';
+        
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+            </div>
+            <div id="footer">
+                Blog powered by
+                <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+            </div>
+        </div>
+    <script id="dsq-count-scr" src="//haskellwithoutremorse.disqus.com/count.js" async></script>
+    </body>
+</html>

@@ -8,8 +8,16 @@
         <name>Anton Gushcha</name>
         <email>ncrashed@gmail.com</email>
     </author>
-    <updated>2016-07-20T00:00:00Z</updated>
+    <updated>2016-09-11T00:00:00Z</updated>
     <entry>
+    <title>HSOC Results</title>
+    <link href="http://ncrashed.github.io/blog/posts/2016-09-11-hsoc-results.html" />
+    <id>http://ncrashed.github.io/blog/posts/2016-09-11-hsoc-results.html</id>
+    <published>2016-09-11T00:00:00Z</published>
+    <updated>2016-09-11T00:00:00Z</updated>
+    <summary type="html"><![CDATA[The summer was awesome, I finally pushed the HSOC "Live profiling and performance monitoring server" project to consistent state. Almost all features are implemented and changes to GHC are submitted to Phabricator.]]></summary>
+</entry>
+<entry>
     <title>Live profile monitor</title>
     <link href="http://ncrashed.github.io/blog/posts/2016-07-20-hsoc-monitoring-library.html" />
     <id>http://ncrashed.github.io/blog/posts/2016-07-20-hsoc-monitoring-library.html</id>
