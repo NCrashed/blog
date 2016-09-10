@@ -1,10 +1,10 @@
 ---
-title: HSOC Results
+title: HSOC evaluation for live profiling server
 image: images/haskell-logo.png
 description: The summer was awesome, I finally pushed the HSOC "Live profiling and performance monitoring server" project to consistent state. Almost all features are implemented and changes to GHC are submitted to Phabricator.
 ---
 
-The summer was awesome, I finally pushed the HSOC "Live profiling and performance monitoring server" project to consistent state. Most features are implemented and changes to GHC are submitted to Phabricator.
+The summer was awesome, I finally pushed the [Haskell Summer of Code 2016](https://summer.haskell.org/) "Live profiling and performance monitoring server" [project](/posts/2016-06-12-hsoc-acceptance.html) to consistent state. Most features are implemented and changes to GHC are submitted to Phabricator.
 
 ## Live profile server
 
@@ -42,7 +42,7 @@ Which goals are achieved at the moment:
 
   3. Dynamic resizing of eventlog buffers.
 
-* [Monitor](https://github.com/NCrashed/live-profile-monitor):
+* [Monitor](https://github.com/NCrashed/live-profile-monitor), implementation details are described [here](/posts/2016-06-22-hsoc-rts.html) and [here](/posts/2016-07-20-hsoc-monitoring-library.html):
   
   1. Connection to profiled application via small "leech" library and FIFO pipe. 
 
@@ -104,8 +104,8 @@ connectionServer = restServer (Proxy :: Proxy '[ 'GET, 'POST, 'PUT, 'PATCH, 'DEL
   (Proxy :: Proxy App)
 ```
 
-I am going to make a several blog post about the type level magic that was used to implement this. Also, to publish independent packages for automatic deriving of 
-REST servers. At the moment the packages are located at the `live-profile-server` repo, see `servant-rest-derive` and `servant-rest-derive-server` subfolders.
+I am going to make a several blog post about the type level magic that was used to implement this and also to publish independent packages for automatic deriving of 
+REST servers. At the moment the packages are located at the `live-profile-server` repo, see [servant-rest-derive](https://github.com/NCrashed/live-profile-server/tree/master/servant-rest-derive) and [servant-rest-derive-server](https://github.com/NCrashed/live-profile-server/tree/master/servant-rest-derive-server) subfolders.
 
 ## Future work
 
