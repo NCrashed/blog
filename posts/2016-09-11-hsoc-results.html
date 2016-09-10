@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-        <title>Haskelling without remorse - HSOC Results</title>
+        <title>Haskelling without remorse - HSOC evaluation for live profiling server</title>
         <link href="https://fonts.googleapis.com/css?family=Roboto+Slab&subset=latin,cyrillic-ext" rel="stylesheet" type="text/css">
         <link href="https://fonts.googleapis.com/css?family=Gentium+Book+Basic" rel="stylesheet"> 
         <link rel="stylesheet" type="text/css" href="../css/default.css" />
@@ -27,7 +27,7 @@
             </div>
 
             <div id="content">
-                <h1>HSOC Results</h1>
+                <h1>HSOC evaluation for live profiling server</h1>
 
                 <div class="info">
     Posted on September 11, 2016
@@ -35,7 +35,7 @@
 </div>
 
 <div class="post-body">
-<p>The summer was awesome, I finally pushed the HSOC “Live profiling and performance monitoring server” project to consistent state. Most features are implemented and changes to GHC are submitted to Phabricator.</p>
+<p>The summer was awesome, I finally pushed the <a href="https://summer.haskell.org/">Haskell Summer of Code 2016</a> “Live profiling and performance monitoring server” <a href="../posts/2016-06-12-hsoc-acceptance.html">project</a> to consistent state. Most features are implemented and changes to GHC are submitted to Phabricator.</p>
 <h2 id="live-profile-server">Live profile server</h2>
 <p><a href="https://github.com/NCrashed/live-profile-server">The server</a> is a web based application to view and manage eventlogs that are uploaded manually or received from <a href="https://github.com/NCrashed/live-profile-monitor">live-profile-monitor</a>.</p>
 <p>At the moment server is able to produce <a href="http://www.well-typed.com/blog/86/">ghc-events-analyze</a> like diagrams:</p>
@@ -59,7 +59,7 @@
 <li><p>Dynamic resizing of eventlog buffers.</p></li>
 </ol>
 <ul>
-<li><a href="https://github.com/NCrashed/live-profile-monitor">Monitor</a>:</li>
+<li><a href="https://github.com/NCrashed/live-profile-monitor">Monitor</a>, implementation details are described <a href="../posts/2016-06-22-hsoc-rts.html">here</a> and <a href="../posts/2016-07-20-hsoc-monitoring-library.html">here</a>:</li>
 </ul>
 <ol style="list-style-type: decimal">
 <li><p>Connection to profiled application via small “leech” library and FIFO pipe.</p></li>
@@ -104,7 +104,7 @@
 connectionServer <span class="fu">=</span> restServer (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="ch">'[ '</span><span class="dt">GET</span>, <span class="ch">'POST, '</span><span class="dt">PUT</span>, <span class="ch">'PATCH, '</span><span class="dt">DELETE</span>]) 
   (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">Connection</span>) (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="st">&quot;connection&quot;</span>)
   (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">App</span>)</code></pre></div>
-<p>I am going to make a several blog post about the type level magic that was used to implement this. Also, to publish independent packages for automatic deriving of REST servers. At the moment the packages are located at the <code>live-profile-server</code> repo, see <code>servant-rest-derive</code> and <code>servant-rest-derive-server</code> subfolders.</p>
+<p>I am going to make a several blog post about the type level magic that was used to implement this and also to publish independent packages for automatic deriving of REST servers. At the moment the packages are located at the <code>live-profile-server</code> repo, see <a href="https://github.com/NCrashed/live-profile-server/tree/master/servant-rest-derive">servant-rest-derive</a> and <a href="https://github.com/NCrashed/live-profile-server/tree/master/servant-rest-derive-server">servant-rest-derive-server</a> subfolders.</p>
 <h2 id="future-work">Future work</h2>
 <p>I am not going to drop the project, as it is far from state that is helpful at production. Following features are next to do:</p>
 <ul>
