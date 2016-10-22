@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>Haskelling without remorse - Lets make Minecraft mod on Haskell</title>
+        <link href="https://fonts.googleapis.com/css?family=Roboto+Slab&subset=latin,cyrillic-ext" rel="stylesheet" type="text/css">
+        <link href="https://fonts.googleapis.com/css?family=Gentium+Book+Basic" rel="stylesheet"> 
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+        <link rel="stylesheet" type="text/css" href="../css/spoiler.css" />
+        <link rel="alternate" type="application/rss+xml" title="Haskell without remorse" href="./feed.xml">
+        <link rel="alternate" type="application/atom+xml" title="Haskell without remorse" href="./atom.xml">
+    </head>
+    <body>
+        <div id="container">
+            <div id="header">
+                <div id="logo">
+                    <a href="../">Haskelling without remorse</a>
+                </div>
+                <div id="navigation">
+                    <a href="../">Home</a>
+                    <a href="../about.html">About</a>
+                    <a href="../contact.html">Contact</a>
+                    <a href="../feed.xml">RSS</a>
+                </div>
+            </div>
+
+            <div id="content">
+                <h1>Lets make Minecraft mod on Haskell</h1>
+
+                <div class="info">
+    Posted on October 22, 2016
+    
+</div>
+
+<div class="post-body">
+<h2 id="prerequisites"><a name="prerequisites">Prerequisites</a></h2>
+<p>I expect that you run a GNU/Linux system, but other systems experience shouldn’t differ a lot. If you run into any problems, you can post them in:</p>
+<ul>
+<li><p>comments for the post for tutorial specific questions.</p></li>
+<li><p><a href="https://github.com/rahulmutt/ghcvm/tree/master">ghcvm</a> issue tracker or <a href="https://gitter.im/rahulmutt/ghcvm">chat</a> for issues with GHCVM implementation.</p></li>
+</ul>
+<h2 id="ghcvm-installation"><a name="ghcvm_installation">GHCVM installation</a></h2>
+<p>Follow the official <a href="https://github.com/rahulmutt/ghcvm#method-1-normal-installation">GHCVM guide</a>. You should end up with <code>ghcvm</code> and <code>cabalvm</code> executables on your PATH environment variable.</p>
+<h2 id="forge-environment-setup"><a name="forge_installation">Forge environment setup</a></h2>
+<p>Now we need a minimal Minecraft Forge developer environment. Go to the <a href="http://files.minecraftforge.net/">official site</a> of Forge and download the latest <code>Mdk</code> archive.</p>
+<p>Extract it anywhere:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">unzip</span> forge-1.10.2-12.18.2.2099-mdk.zip -d forge</code></pre></div>
+<p>Create a new folder for your personal mod, lets call it <code>hello</code>, and copy the following files from unpacked forge archive:</p>
+<ul>
+<li><p><code>build.gradle</code> - defines how to build and run your mod with <a href="https://gradle.org/">gradle</a> Java tool.</p></li>
+<li><p><code>gradle</code> folder with <a href="https://gradle.org/">gradle</a> tool itself.</p></li>
+<li><p><code>gradlew</code> and <code>gradlew.bat</code> scripts for running the local <a href="https://gradle.org/">gradle</a>.</p></li>
+<li><p><code>src</code> - folder with Java sources of your mod.</p></li>
+</ul>
+<p>Also you can copy <code>eclipse</code> folder if you desire to use the IDE and copy license files to respect legal issues.</p>
+<p>Finally, lets bootstrap it:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">./gradlew</span> setupDecompWorkspace
+<span class="kw">./gradlew</span> runClient</code></pre></div>
+<p>After the last command a MC client should start with Forge and dummy mod.</p>
+<h2 id="adding-haskell-part"><a name="haskell_part">Adding Haskell part</a></h2>
+<p>We are comming to part where the tutorial differs from common way to mod MC. Lets init Haskell subproject:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">cd</span> src/main
+<span class="kw">mkdir</span> haskell
+<span class="kw">cd</span> haskell
+<span class="kw">cabalvm</span> init</code></pre></div>
+<p>Next answer some simple questions about <em>“what’s your name?”</em>, <em>“what’s your purpose?”</em>. You can answer whatever you like, but for some of them the tutorial expects the following answers:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">Package</span> name? [default: main] hello
+<span class="kw">....</span>
+<span class="kw">What</span> does the package build:
+   <span class="kw">1</span>) <span class="kw">Library</span>
+   <span class="kw">2</span>) <span class="kw">Executable</span>
+<span class="kw">Your</span> choice? 2
+<span class="kw">....</span>
+<span class="kw">Source</span> directory:
+ <span class="kw">*</span> 1) <span class="kw">(none)</span>
+   <span class="kw">2</span>) <span class="kw">src</span>
+   <span class="kw">3</span>) <span class="kw">Other</span> (specify)
+<span class="kw">Your</span> choice? [default: (none)] <span class="kw">2</span></code></pre></div>
+<p>The executable option is important as <code>cabalvm</code> will collect all dependencies alongside with your app and pack them in one mega jar. That can save you a bundle of nerves in near future. Although we are not going to use <code>main</code> method of the executable at all.</p>
+<p>Now we create the <code>Main</code> module of mentioned dummy executable. Put the following in new file <code>src/Main.hs</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">module</span> <span class="dt">Main</span> <span class="kw">where</span>
+
+<span class="ot">main ::</span> <span class="dt">IO</span> ()
+main <span class="fu">=</span> return ()</code></pre></div>
+<p>Now we need a module for global Java exports, put the following into <code>src/Export.hs</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE MagicHash #-}</span>
+<span class="kw">module</span> <span class="dt">Export</span> <span class="kw">where</span>
+
+<span class="kw">import </span><span class="dt">GHC.Base</span>
+<span class="kw">import </span><span class="dt">GHC.Pack</span>
+
+<span class="co">-- | Our first mod will greet a player on chat command</span>
+<span class="fu">--</span>
+<span class="co">-- `Java class a` is special monad that works in context of class `class` and</span>
+<span class="co">-- returns type `a`.</span>
+<span class="ot">sayHello ::</span> <span class="dt">JString</span> <span class="ot">-&gt;</span> <span class="dt">Java</span> <span class="dt">Export</span> <span class="dt">JString</span>
+sayHello n <span class="fu">=</span> return <span class="fu">.</span> mkJString <span class="fu">$</span> <span class="st">&quot;Hello, &quot;</span> <span class="fu">++</span> unpackCString n <span class="fu">++</span> <span class="st">&quot;!&quot;</span>
+
+<span class="co">-- The following line tells GHCVM to create Java class `Export`</span>
+<span class="co">-- at package `hello`. We will use it as some sort of interface to Haskell world.</span>
+<span class="kw">data</span> <span class="ot">{-# CLASS &quot;hello.Export&quot; #-}</span> <span class="dt">Export</span> <span class="fu">=</span> <span class="dt">Export</span> (<span class="dt">Object</span><span class="fu">#</span> <span class="dt">Export</span>)
+
+<span class="co">-- Generate export wrapper that evaulates Haskell thunks</span>
+foreign export java<span class="ot"> sayHello ::</span> <span class="dt">JString</span> <span class="ot">-&gt;</span> <span class="dt">Java</span> <span class="dt">Export</span> <span class="dt">JString</span></code></pre></div>
+<p>And add <code>Export</code> module to <code>other-modules</code> in <code>hello.cabal</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- ...</span>
+
+executable hello
+  main<span class="fu">-</span>is<span class="fu">:</span>             Main.hs
+  other<span class="fu">-</span>modules<span class="fu">:</span>       <span class="dt">Export</span>
+
+<span class="co">-- ...</span></code></pre></div>
+<p>Check that <code>cabalvm</code> can build Haskell jar:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="kw">cabalvm</span> build
+<span class="kw">Package</span> has never been configured. Configuring with default flags. If this
+<span class="kw">fails</span>, please run configure manually.
+<span class="kw">Warning</span>: The package list for <span class="st">'hackage.haskell.org'</span> does not exist. Run <span class="st">'cabal</span>
+<span class="st">update'</span> to download it.
+<span class="kw">Resolving</span> dependencies...
+<span class="kw">Configuring</span> hello-0.1.0.0...
+<span class="kw">Building</span> hello-0.1.0.0...
+<span class="kw">Preprocessing</span> executable <span class="st">'hello'</span> for hello-0.1.0.0...
+[<span class="kw">1</span> of 2] Compiling Main             ( src/Main.hs, dist/build/hello/hello-tmp/Main.jar )
+[<span class="kw">2</span> of 2] Compiling Export           ( src/Export.hs, dist/build/hello/hello-tmp/Export.jar )
+<span class="kw">Linking</span> dist/build/hello/hello.jar ...</code></pre></div>
+<h3 id="add-haskell-dependency"><a name="haskell_dependency">Add Haskell dependency</a></h3>
+<p>So far we have a compiled Haskell jar file located at <code>src/main/haskell/dist/build/hello/hello.jar</code> and it would be nice to link it to our Minecraft application.</p>
+<p>First, find <code>dependencies</code> section and add line as follows:</p>
+<div class="sourceCode"><pre class="sourceCode json"><code class="sourceCode json"><span class="er">dependencies</span> <span class="fu">{</span>
+    <span class="er">compile</span> <span class="er">fileTree(dir</span><span class="fu">:</span> <span class="er">'libs'</span><span class="fu">,</span> <span class="er">include</span><span class="fu">:</span> <span class="ot">[</span><span class="er">'*.jar'</span><span class="ot">]</span><span class="er">)</span>
+
+    <span class="er">//</span> <span class="er">here</span> <span class="er">is</span> <span class="er">a</span> <span class="er">huge</span> <span class="er">comment</span> <span class="er">block</span>
+<span class="fu">}</span></code></pre></div>
+<p>Gradle will add all <code>libs/*.jar</code> to our <code>.classpath</code> at build and start. Next, add Haskell rebuild task to the end of <code>build.gradle</code>:</p>
+<div class="sourceCode"><pre class="sourceCode json"><code class="sourceCode json"><span class="er">task</span> <span class="er">compileHaskell(type:Exec)</span> <span class="fu">{</span>
+    <span class="er">workingDir</span> <span class="dt">&quot;src/main/haskell&quot;</span>
+    <span class="er">commandLine</span> <span class="dt">&quot;cabalvm&quot;</span><span class="fu">,</span> <span class="dt">&quot;build&quot;</span>
+<span class="fu">}</span>
+
+<span class="er">task</span> <span class="er">copyHaskellJar(type:</span> <span class="er">Copy)</span> <span class="fu">{</span>
+    <span class="er">dependsOn</span> <span class="er">compileHaskell</span>
+    <span class="er">from</span> <span class="er">'src/main/haskell/dist/build/hello/hello.jar'</span>
+    <span class="er">into</span> <span class="er">'libs'</span>
+<span class="fu">}</span>
+
+<span class="er">tasks.build.dependsOn(copyHaskellJar)</span></code></pre></div>
+<p>Now you can manually call:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">./gradlew</span> copyHaskellJar</code></pre></div>
+<p>Or simply run:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">./gradlew</span> build</code></pre></div>
+<p>And your Haskell part will be recompiled and copied in dependency folder automatically!</p>
+<h3 id="call-haskell-from-java"><a name="call_haskell">Call Haskell from Java</a></h3>
+<p>The last step is left, we need to call our gorgeous <code>sayHello</code> function in response to chat command <code>\hello &lt;name&gt;</code>.</p>
+<p>First, we need to initialise our <code>hello.Export</code> class and place at some global scope. Edit <code>src/main/java/com/example/examplemod/ExampleMod.java</code>:</p>
+<div class="sourceCode"><pre class="sourceCode java"><code class="sourceCode java"><span class="kw">package com.example.examplemod;</span>
+
+<span class="kw">import ghcvm.runtime.*;</span>
+<span class="kw">import hello.Export;</span>
+<span class="kw">import net.minecraft.init.Blocks;</span>
+<span class="kw">import net.minecraftforge.fml.common.event.FMLInitializationEvent;</span>
+<span class="kw">import net.minecraftforge.fml.common.event.FMLServerStartingEvent;</span>
+<span class="kw">import net.minecraftforge.fml.common.Mod.EventHandler;</span>
+<span class="kw">import net.minecraftforge.fml.common.Mod;</span>
+
+<span class="fu">@Mod</span>(modid = ExampleMod.<span class="fu">MODID</span>, version = ExampleMod.<span class="fu">VERSION</span>)
+<span class="kw">public</span> <span class="kw">class</span> ExampleMod
+{
+    <span class="kw">public</span> <span class="dt">static</span> <span class="dt">final</span> String MODID = <span class="st">&quot;examplemod&quot;</span>;
+    <span class="kw">public</span> <span class="dt">static</span> <span class="dt">final</span> String VERSION = <span class="st">&quot;1.0&quot;</span>;
+    <span class="kw">public</span> <span class="dt">static</span> Export HASKELL;
+
+    <span class="fu">@EventHandler</span>
+    <span class="kw">public</span> <span class="dt">void</span> <span class="fu">init</span>(FMLInitializationEvent event)
+    {
+        <span class="co">// We need to init Haskell RTS once</span>
+        Rts.<span class="fu">hsInit</span>(<span class="kw">new</span> String[<span class="dv">0</span>], RtsConfig.<span class="fu">getDefault</span>());
+        <span class="co">// Create our class with exported Haskell functions</span>
+        HASKELL = <span class="kw">new</span> <span class="fu">Export</span>();
+    }
+
+    <span class="fu">@EventHandler</span>
+    <span class="kw">public</span> <span class="dt">void</span> <span class="fu">serverLoad</span>(FMLServerStartingEvent event) {
+        event.<span class="fu">registerServerCommand</span>(<span class="kw">new</span> <span class="fu">CommandHello</span>());
+    }
+}</code></pre></div>
+<p>Finally, create new <code>CommandHello.java</code> class at <code>src/main/java/com/example/examplemod</code> folder:</p>
+<div class="sourceCode"><pre class="sourceCode java"><code class="sourceCode java"><span class="kw">package com.example.examplemod;</span>
+
+<span class="kw">import java.util.ArrayList;</span>
+<span class="kw">import java.util.List;</span>
+<span class="kw">import javax.annotation.Nullable;</span>
+<span class="kw">import net.minecraft.command.CommandException;</span>
+<span class="kw">import net.minecraft.command.ICommand;</span>
+<span class="kw">import net.minecraft.command.ICommandSender;</span>
+<span class="kw">import net.minecraft.server.MinecraftServer;</span>
+<span class="kw">import net.minecraft.util.math.BlockPos;</span>
+<span class="kw">import net.minecraft.util.text.TextComponentString;</span>
+<span class="kw">import net.minecraft.world.World;</span>
+
+<span class="kw">public</span> <span class="kw">class</span> CommandHello <span class="kw">implements</span> ICommand {
+    <span class="kw">private</span> <span class="dt">final</span> List aliases;
+
+    <span class="kw">public</span> <span class="fu">CommandHello</span>() {
+        aliases = <span class="kw">new</span> ArrayList();
+        aliases.<span class="fu">add</span>(<span class="st">&quot;hello&quot;</span>);
+    }
+
+    <span class="fu">@Override</span>
+    <span class="kw">public</span> String <span class="fu">getCommandName</span>() {
+        <span class="kw">return</span> <span class="st">&quot;hello&quot;</span>;
+    }
+
+    <span class="fu">@Override</span>
+    <span class="kw">public</span> String <span class="fu">getCommandUsage</span>(ICommandSender sender) {
+        <span class="kw">return</span> <span class="st">&quot;hello name&quot;</span>;
+    }
+
+    <span class="fu">@Override</span>
+    <span class="kw">public</span> List&lt;String&gt; <span class="fu">getCommandAliases</span>() {
+        <span class="kw">return</span> <span class="kw">this</span>.<span class="fu">aliases</span>;
+    }
+
+    <span class="fu">@Override</span>
+    <span class="kw">public</span> <span class="dt">void</span> <span class="fu">execute</span>(MinecraftServer server, ICommandSender sender, String[] args)
+        <span class="kw">throws</span> CommandException
+    {
+        World world = sender.<span class="fu">getEntityWorld</span>();
+
+        <span class="kw">if</span> (!world.<span class="fu">isRemote</span>) {
+            String v = ExampleMod.<span class="fu">HASKELL</span>.<span class="fu">sayHello</span>(<span class="st">&quot;NCrashed&quot;</span>);
+            sender.<span class="fu">addChatMessage</span>(<span class="kw">new</span> <span class="fu">TextComponentString</span>(v));
+        }
+    }
+
+    <span class="fu">@Override</span>
+    <span class="kw">public</span> <span class="dt">boolean</span> <span class="fu">checkPermission</span>(MinecraftServer server, ICommandSender sender) {
+        <span class="kw">return</span> <span class="kw">true</span>;
+    }
+
+    <span class="fu">@Override</span>
+    <span class="kw">public</span> List&lt;String&gt; <span class="fu">getTabCompletionOptions</span>(MinecraftServer server
+        , ICommandSender sender
+        , String[] args
+        , <span class="fu">@Nullable</span> BlockPos pos)
+    {
+        <span class="kw">return</span> <span class="kw">new</span> ArrayList();
+    }
+
+    <span class="fu">@Override</span>
+    <span class="kw">public</span> <span class="dt">boolean</span> <span class="fu">isUsernameIndex</span>(String[] args, <span class="dt">int</span> index) {
+        <span class="kw">return</span> <span class="kw">false</span>;
+    }
+
+    <span class="fu">@Override</span>
+    <span class="kw">public</span> <span class="dt">int</span> <span class="fu">compareTo</span>(ICommand iCommand) {
+        <span class="kw">return</span> <span class="dv">0</span>;
+    }
+}</code></pre></div>
+<p>Thats all, run <code>./gradlew runClient</code> and you now able to say “Hello” form Haskell!</p>
+<div class="figure">
+<img src="../images/minecraft_hello_ghcvm_screenshot.png#center-sized" />
+
+</div>
+<h2 id="setup-intellij-idea"><a name="intellij">Setup IntelliJ IDEA</a></h2>
+<p>You can develop with <a href="https://www.jetbrains.com/idea/">IntelliJ IDEA</a>. Import the local <code>build.gradle</code> as gradle project at IDEA startup screen.</p>
+<div class="figure">
+<img src="../images/minecraft_hello_ghcvm_idea.png#center-sized" />
+
+</div>
+<p>And generate run targets for it:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">./gradlew</span> genIntellijRuns</code></pre></div>
+<p>Also you can run into the following problem while trying to run the mod from IDEA:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">Exception</span> in thread <span class="st">&quot;main&quot;</span> java.lang.ClassNotFoundException: GradleStart
+  <span class="kw">at</span> java.net.URLClassLoader.findClass(URLClassLoader.java:381)
+  <span class="kw">at</span> java.lang.ClassLoader.loadClass(ClassLoader.java:424)
+  <span class="kw">at</span> sun.misc.Launcher<span class="ot">$AppClassLoader</span>.loadClass(Launcher.java:331)
+  <span class="kw">at</span> java.lang.ClassLoader.loadClass(ClassLoader.java:357)
+  <span class="kw">at</span> java.lang.Class.forName0(Native Method)
+  <span class="kw">at</span> java.lang.Class.forName(Class.java:264)</code></pre></div>
+<p>You need to change classpath module to <code>hello_main</code> in run configuration edit dialog: <img src="../images/minecraft_hello_ghcvm_idea_run.png#center-sized" /></p>
+<h2 id="references"><a name="references">References</a></h2>
+<ul>
+<li>Assembled project <a href="https://github.com/NCrashed/minecraft-ghcvm-helloworld">repo</a></li>
+</ul>
+</div>
+
+<div id="disqus_thread"></div>
+<script>
+    /**
+     *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+     *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables
+     */
+    
+    /*
+    var disqus_config = function () {
+        this.page.url = '/posts/2016-10-22-ghcvm-minecraft-modding.html';  // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+    */
+
+    (function() {  // DON'T EDIT BELOW THIS LINE
+        var d = document, s = d.createElement('script');
+        
+        s.src = '//haskellwithoutremorse.disqus.com/embed.js';
+        
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript" rel="nofollow">comments powered by Disqus.</a></noscript>
+            </div>
+            <div id="footer">
+                Blog powered by
+                <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+            </div>
+        </div>
+    <script id="dsq-count-scr" src="//haskellwithoutremorse.disqus.com/count.js" async></script>
+    </body>
+</html>

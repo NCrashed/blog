@@ -7,8 +7,16 @@
         <description><![CDATA[Blog about Haskell development]]></description>
         <atom:link href="http://ncrashed.github.io/blog/feed.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Sun, 11 Sep 2016 00:00:00 UT</lastBuildDate>
+        <lastBuildDate>Sat, 22 Oct 2016 00:00:00 UT</lastBuildDate>
         <item>
+    <title>Lets make Minecraft mod on Haskell</title>
+    <link>http://ncrashed.github.io/blog/posts/2016-10-22-ghcvm-minecraft-modding.html</link>
+    <description><![CDATA[GHCVM (JVM backend for GHC) is now ready to be used for Minecraft moding. The post will tell you how to setup minimum development environment for Haskell based mod.]]></description>
+    <pubDate>Sat, 22 Oct 2016 00:00:00 UT</pubDate>
+    <guid>http://ncrashed.github.io/blog/posts/2016-10-22-ghcvm-minecraft-modding.html</guid>
+    <dc:creator>Anton Gushcha</dc:creator>
+</item>
+<item>
     <title>HSOC evaluation for live profiling server</title>
     <link>http://ncrashed.github.io/blog/posts/2016-09-11-hsoc-results.html</link>
     <description><![CDATA[The summer was awesome, I finally pushed the HSOC "Live profiling and performance monitoring server" project to consistent state. Almost all features are implemented and changes to GHC are submitted to Phabricator.]]></description>
