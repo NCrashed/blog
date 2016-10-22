@@ -4,6 +4,8 @@ image: images/minecraft_logo_dirt.png
 description: GHCVM (JVM backend for GHC) is now ready to be used for Minecraft moding. The post will tell you how to setup minimum development environment for Haskell based mod.
 ---
 
+[GHCVM](https://github.com/rahulmutt/ghcvm/tree/master) (JVM backend for GHC) is now ready to be used for Minecraft moding. The post should help you to setup a minimum development environment for a Haskell based mod.
+
 ## <a name="prerequisites">Prerequisites</a>
 
 I expect that you run a GNU/Linux system, but other systems experience shouldn't
@@ -16,13 +18,21 @@ or [chat](https://gitter.im/rahulmutt/ghcvm) for issues with GHCVM implementatio
 
 ## <a name="ghcvm_installation">GHCVM installation</a>
 
-Follow the official [GHCVM guide](https://github.com/rahulmutt/ghcvm#method-1-normal-installation). You should end up with `ghcvm` and `cabalvm` executables on your PATH environment variable.
+Follow the official [GHCVM guide](https://github.com/rahulmutt/ghcvm#method-1-normal-installation). You should end up with `ghcvm` and `cabalvm` executables on your `PATH` environment variable.
+
+``` bash
+$ ghcvm --version
+Glasgow Haskell Compiler for the Java Virtual Machine, version 0.0.1
+$ cabalvm --version
+cabal-install version 1.22.9.0
+using version 1.22.8.0 of the Cabal library
+```
 
 ## <a name="forge_installation">Forge environment setup</a>
 
 Now we need a minimal Minecraft Forge developer environment. Go to the [official site](http://files.minecraftforge.net/) of Forge and download the latest `Mdk` archive.
 
-Extract it anywhere:
+Extract it somewhere, for instance `forge` folder:
 
 ``` bash
 unzip forge-1.10.2-12.18.2.2099-mdk.zip -d forge
@@ -105,8 +115,12 @@ import GHC.Pack
 
 -- | Our first mod will greet a player on chat command
 --
--- `Java class a` is special monad that works in context of class `class` and
+-- `Java class a` is special monad that works in context of Java class `class` and
 -- returns type `a`.
+--
+-- So the type says: This is a method with single string argument that is located in
+-- `Export` Java class and returns another string.
+--
 sayHello :: JString -> Java Export JString
 sayHello n = return . mkJString $ "Hello, " ++ unpackCString n ++ "!"
 
@@ -114,7 +128,11 @@ sayHello n = return . mkJString $ "Hello, " ++ unpackCString n ++ "!"
 -- at package `hello`. We will use it as some sort of interface to Haskell world.
 data {-# CLASS "hello.Export" #-} Export = Export (Object# Export)
 
--- Generate export wrapper that evaulates Haskell thunks
+-- Generate export wrapper that evaluates Haskell thunks
+--
+-- This will add actual `public String sayHello(String arg)` method to `Export`
+-- Java class. The method will encapsulate all magic that one need to pull values
+-- out to Java side.
 foreign export java sayHello :: JString -> Java Export JString
 ```
 
@@ -150,10 +168,15 @@ Linking dist/build/hello/hello.jar ...
 So far we have a compiled Haskell jar file located at `src/main/haskell/dist/build/hello/hello.jar` and it would be nice to link it to our Minecraft application.
 
 First, find `dependencies` section
-and add line as follows:
+and add make it look as follows:
 ``` json
+configurations {
+    embed
+    compile.extendsFrom(embed)
+}
+
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    embed fileTree(dir: 'libs', include: ['*.jar'])
 
     // here is a huge comment block
 }
@@ -174,6 +197,10 @@ task copyHaskellJar(type: Copy) {
 }
 
 tasks.build.dependsOn(copyHaskellJar)
+
+jar {
+    from configurations.embed.collect { it.isDirectory() ? it : zipTree(it) }
+}
 ```
 
 Now you can manually call:
@@ -187,6 +214,26 @@ Or simply run:
 ```
 
 And your Haskell part will be recompiled and copied in dependency folder automatically!
+Important note that Haskell compiled classes will be copied in resulting jar of the mod. It **will** cause conflicts if an user uses several Haskell mods.
+
+<div class="spoiler">
+<input id="spoilerid_1" type="checkbox"><label for="spoilerid_1">
+More complex setup with sharing of libraries:
+</label><div class="spoiler_body">
+1. Use `library` build for Haskell project, that will generate slim jar without
+embeded libraries.
+
+2. Copy all dependencies into `/libs` folder or you will get `ClassNotFound` exceptions. At the moment you have to collect them manually from `~/.cabalvm` directory.
+
+3. Use `build` configuration at `gradle.build`:
+``` json
+dependencies {
+    build fileTree(dir: 'libs', include: ['*.jar'])
+}
+```
+
+4. Distribute all dependencies separately alongside with your mod jar.
+</div></div>
 
 ### <a name="call_haskell">Call Haskell from Java</a>
 
@@ -338,3 +385,7 @@ dialog:
 ## <a name="references">References</a>
 
 * Assembled project [repo](https://github.com/NCrashed/minecraft-ghcvm-helloworld)
+
+* Full [guide](https://mcforge.readthedocs.io/en/latest/) for Minecraft Forge.
+
+* GHCVM [documentation](https://github.com/rahulmutt/ghcvm/tree/master/docs). Note that is work in progress and will be extended shortly.
