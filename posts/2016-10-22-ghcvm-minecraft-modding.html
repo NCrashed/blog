@@ -159,7 +159,6 @@ executable hello
 <span class="kw">import ghcvm.runtime.*;</span>
 <span class="kw">import hello.Export;</span>
 <span class="kw">import net.minecraft.init.Blocks;</span>
-<span class="kw">import net.minecraftforge.fml.common.event.FMLInitializationEvent;</span>
 <span class="kw">import net.minecraftforge.fml.common.event.FMLServerStartingEvent;</span>
 <span class="kw">import net.minecraftforge.fml.common.Mod.EventHandler;</span>
 <span class="kw">import net.minecraftforge.fml.common.Mod;</span>
@@ -169,15 +168,13 @@ executable hello
 {
     <span class="kw">public</span> <span class="dt">static</span> <span class="dt">final</span> String MODID = <span class="st">&quot;examplemod&quot;</span>;
     <span class="kw">public</span> <span class="dt">static</span> <span class="dt">final</span> String VERSION = <span class="st">&quot;1.0&quot;</span>;
-    <span class="kw">public</span> <span class="dt">static</span> Export HASKELL;
+    <span class="kw">public</span> <span class="dt">static</span> <span class="dt">final</span> Export HASKELL;
 
-    <span class="fu">@EventHandler</span>
-    <span class="kw">public</span> <span class="dt">void</span> <span class="fu">init</span>(FMLInitializationEvent event)
-    {
-        <span class="co">// We need to init Haskell RTS once</span>
-        Rts.<span class="fu">hsInit</span>(<span class="kw">new</span> String[<span class="dv">0</span>], RtsConfig.<span class="fu">getDefault</span>());
-        <span class="co">// Create our class with exported Haskell functions</span>
-        HASKELL = <span class="kw">new</span> <span class="fu">Export</span>();
+    <span class="dt">static</span> {
+      <span class="co">// We need to init Haskell RTS once</span>
+      Rts.<span class="fu">hsInit</span>(<span class="kw">new</span> String[<span class="dv">0</span>], RtsConfig.<span class="fu">getDefault</span>());
+      <span class="co">// Create our class with exported Haskell functions</span>
+      HASKELL = <span class="kw">new</span> <span class="fu">Export</span>();
     }
 
     <span class="fu">@EventHandler</span>
@@ -228,8 +225,8 @@ executable hello
     {
         World world = sender.<span class="fu">getEntityWorld</span>();
 
-        <span class="kw">if</span> (!world.<span class="fu">isRemote</span>) {
-            String v = ExampleMod.<span class="fu">HASKELL</span>.<span class="fu">sayHello</span>(<span class="st">&quot;NCrashed&quot;</span>);
+        <span class="kw">if</span> (!world.<span class="fu">isRemote</span> &amp;&amp; args.<span class="fu">length</span> &gt; <span class="dv">0</span>) {
+            String v = ExampleMod.<span class="fu">HASKELL</span>.<span class="fu">sayHello</span>(args[<span class="dv">0</span>]);
             sender.<span class="fu">addChatMessage</span>(<span class="kw">new</span> <span class="fu">TextComponentString</span>(v));
         }
     }
