@@ -35,6 +35,7 @@
 </div>
 
 <div class="post-body">
+<p><a href="https://github.com/rahulmutt/ghcvm/tree/master">GHCVM</a> (JVM backend for GHC) is now ready to be used for Minecraft moding. The post should help you to setup a minimum development environment for a Haskell based mod.</p>
 <h2 id="prerequisites"><a name="prerequisites">Prerequisites</a></h2>
 <p>I expect that you run a GNU/Linux system, but other systems experience shouldn’t differ a lot. If you run into any problems, you can post them in:</p>
 <ul>
@@ -42,10 +43,15 @@
 <li><p><a href="https://github.com/rahulmutt/ghcvm/tree/master">ghcvm</a> issue tracker or <a href="https://gitter.im/rahulmutt/ghcvm">chat</a> for issues with GHCVM implementation.</p></li>
 </ul>
 <h2 id="ghcvm-installation"><a name="ghcvm_installation">GHCVM installation</a></h2>
-<p>Follow the official <a href="https://github.com/rahulmutt/ghcvm#method-1-normal-installation">GHCVM guide</a>. You should end up with <code>ghcvm</code> and <code>cabalvm</code> executables on your PATH environment variable.</p>
+<p>Follow the official <a href="https://github.com/rahulmutt/ghcvm#method-1-normal-installation">GHCVM guide</a>. You should end up with <code>ghcvm</code> and <code>cabalvm</code> executables on your <code>PATH</code> environment variable.</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="kw">ghcvm</span> --version
+<span class="kw">Glasgow</span> Haskell Compiler for the Java Virtual Machine, version 0.0.1
+$ <span class="kw">cabalvm</span> --version
+<span class="kw">cabal-install</span> version 1.22.9.0
+<span class="kw">using</span> version 1.22.8.0 of the Cabal library</code></pre></div>
 <h2 id="forge-environment-setup"><a name="forge_installation">Forge environment setup</a></h2>
 <p>Now we need a minimal Minecraft Forge developer environment. Go to the <a href="http://files.minecraftforge.net/">official site</a> of Forge and download the latest <code>Mdk</code> archive.</p>
-<p>Extract it anywhere:</p>
+<p>Extract it somewhere, for instance <code>forge</code> folder:</p>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">unzip</span> forge-1.10.2-12.18.2.2099-mdk.zip -d forge</code></pre></div>
 <p>Create a new folder for your personal mod, lets call it <code>hello</code>, and copy the following files from unpacked forge archive:</p>
 <ul>
@@ -93,8 +99,12 @@ main <span class="fu">=</span> return ()</code></pre></div>
 
 <span class="co">-- | Our first mod will greet a player on chat command</span>
 <span class="fu">--</span>
-<span class="co">-- `Java class a` is special monad that works in context of class `class` and</span>
+<span class="co">-- `Java class a` is special monad that works in context of Java class `class` and</span>
 <span class="co">-- returns type `a`.</span>
+<span class="fu">--</span>
+<span class="co">-- So the type says: This is a method with single string argument that is located in</span>
+<span class="co">-- `Export` Java class and returns another string.</span>
+<span class="fu">--</span>
 <span class="ot">sayHello ::</span> <span class="dt">JString</span> <span class="ot">-&gt;</span> <span class="dt">Java</span> <span class="dt">Export</span> <span class="dt">JString</span>
 sayHello n <span class="fu">=</span> return <span class="fu">.</span> mkJString <span class="fu">$</span> <span class="st">&quot;Hello, &quot;</span> <span class="fu">++</span> unpackCString n <span class="fu">++</span> <span class="st">&quot;!&quot;</span>
 
@@ -102,7 +112,11 @@ sayHello n <span class="fu">=</span> return <span class="fu">.</span> mkJString 
 <span class="co">-- at package `hello`. We will use it as some sort of interface to Haskell world.</span>
 <span class="kw">data</span> <span class="ot">{-# CLASS &quot;hello.Export&quot; #-}</span> <span class="dt">Export</span> <span class="fu">=</span> <span class="dt">Export</span> (<span class="dt">Object</span><span class="fu">#</span> <span class="dt">Export</span>)
 
-<span class="co">-- Generate export wrapper that evaulates Haskell thunks</span>
+<span class="co">-- Generate export wrapper that evaluates Haskell thunks</span>
+<span class="fu">--</span>
+<span class="co">-- This will add actual `public String sayHello(String arg)` method to `Export`</span>
+<span class="co">-- Java class. The method will encapsulate all magic that one need to pull values</span>
+<span class="co">-- out to Java side.</span>
 foreign export java<span class="ot"> sayHello ::</span> <span class="dt">JString</span> <span class="ot">-&gt;</span> <span class="dt">Java</span> <span class="dt">Export</span> <span class="dt">JString</span></code></pre></div>
 <p>And add <code>Export</code> module to <code>other-modules</code> in <code>hello.cabal</code>:</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- ...</span>
@@ -127,9 +141,14 @@ executable hello
 <span class="kw">Linking</span> dist/build/hello/hello.jar ...</code></pre></div>
 <h3 id="add-haskell-dependency"><a name="haskell_dependency">Add Haskell dependency</a></h3>
 <p>So far we have a compiled Haskell jar file located at <code>src/main/haskell/dist/build/hello/hello.jar</code> and it would be nice to link it to our Minecraft application.</p>
-<p>First, find <code>dependencies</code> section and add line as follows:</p>
-<div class="sourceCode"><pre class="sourceCode json"><code class="sourceCode json"><span class="er">dependencies</span> <span class="fu">{</span>
-    <span class="er">compile</span> <span class="er">fileTree(dir</span><span class="fu">:</span> <span class="er">'libs'</span><span class="fu">,</span> <span class="er">include</span><span class="fu">:</span> <span class="ot">[</span><span class="er">'*.jar'</span><span class="ot">]</span><span class="er">)</span>
+<p>First, find <code>dependencies</code> section and add make it look as follows:</p>
+<div class="sourceCode"><pre class="sourceCode json"><code class="sourceCode json"><span class="er">configurations</span> <span class="fu">{</span>
+    <span class="er">embed</span>
+    <span class="er">compile.extendsFrom(embed)</span>
+<span class="fu">}</span>
+
+<span class="er">dependencies</span> <span class="fu">{</span>
+    <span class="er">embed</span> <span class="er">fileTree(dir</span><span class="fu">:</span> <span class="er">'libs'</span><span class="fu">,</span> <span class="er">include</span><span class="fu">:</span> <span class="ot">[</span><span class="er">'*.jar'</span><span class="ot">]</span><span class="er">)</span>
 
     <span class="er">//</span> <span class="er">here</span> <span class="er">is</span> <span class="er">a</span> <span class="er">huge</span> <span class="er">comment</span> <span class="er">block</span>
 <span class="fu">}</span></code></pre></div>
@@ -145,12 +164,30 @@ executable hello
     <span class="er">into</span> <span class="er">'libs'</span>
 <span class="fu">}</span>
 
-<span class="er">tasks.build.dependsOn(copyHaskellJar)</span></code></pre></div>
+<span class="er">tasks.build.dependsOn(copyHaskellJar)</span>
+
+<span class="er">jar</span> <span class="fu">{</span>
+    <span class="er">from</span> <span class="er">configurations.embed.collect</span> <span class="er">{</span> <span class="er">it.isDirectory()</span> <span class="er">?</span> <span class="er">it</span> <span class="fu">:</span> <span class="er">zipTree(it)</span> <span class="fu">}</span>
+<span class="er">}</span></code></pre></div>
 <p>Now you can manually call:</p>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">./gradlew</span> copyHaskellJar</code></pre></div>
 <p>Or simply run:</p>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">./gradlew</span> build</code></pre></div>
-<p>And your Haskell part will be recompiled and copied in dependency folder automatically!</p>
+<p>And your Haskell part will be recompiled and copied in dependency folder automatically! Important note that Haskell compiled classes will be copied in resulting jar of the mod. It <strong>will</strong> cause conflicts if an user uses several Haskell mods.</p>
+<div class="spoiler">
+<input id="spoilerid_1" type="checkbox"><label for="spoilerid_1"> More complex setup with sharing of libraries: </label>
+<div class="spoiler_body">
+<ol style="list-style-type: decimal">
+<li><p>Use <code>library</code> build for Haskell project, that will generate slim jar without embeded libraries.</p></li>
+<li><p>Copy all dependencies into <code>/libs</code> folder or you will get <code>ClassNotFound</code> exceptions. At the moment you have to collect them manually from <code>~/.cabalvm</code> directory.</p></li>
+<li><p>Use <code>build</code> configuration at <code>gradle.build</code>:</p>
+<div class="sourceCode"><pre class="sourceCode json"><code class="sourceCode json"><span class="er">dependencies</span> <span class="fu">{</span>
+<span class="er">build</span> <span class="er">fileTree(dir</span><span class="fu">:</span> <span class="er">'libs'</span><span class="fu">,</span> <span class="er">include</span><span class="fu">:</span> <span class="ot">[</span><span class="er">'*.jar'</span><span class="ot">]</span><span class="er">)</span>
+<span class="fu">}</span></code></pre></div></li>
+<li>Distribute all dependencies separately alongside with your mod jar.</li>
+</ol>
+</div>
+</div>
 <h3 id="call-haskell-from-java"><a name="call_haskell">Call Haskell from Java</a></h3>
 <p>The last step is left, we need to call our gorgeous <code>sayHello</code> function in response to chat command <code>\hello &lt;name&gt;</code>.</p>
 <p>First, we need to initialise our <code>hello.Export</code> class and place at some global scope. Edit <code>src/main/java/com/example/examplemod/ExampleMod.java</code>:</p>
@@ -279,7 +316,9 @@ executable hello
 <p>You need to change classpath module to <code>hello_main</code> in run configuration edit dialog: <img src="../images/minecraft_hello_ghcvm_idea_run.png#center-sized" /></p>
 <h2 id="references"><a name="references">References</a></h2>
 <ul>
-<li>Assembled project <a href="https://github.com/NCrashed/minecraft-ghcvm-helloworld">repo</a></li>
+<li><p>Assembled project <a href="https://github.com/NCrashed/minecraft-ghcvm-helloworld">repo</a></p></li>
+<li><p>Full <a href="https://mcforge.readthedocs.io/en/latest/">guide</a> for Minecraft Forge.</p></li>
+<li><p>GHCVM <a href="https://github.com/rahulmutt/ghcvm/tree/master/docs">documentation</a>. Note that is work in progress and will be extended shortly.</p></li>
 </ul>
 </div>
 
